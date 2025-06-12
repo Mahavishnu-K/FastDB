@@ -16,13 +16,13 @@ const SQLDisplay = ({ sql, onCopy }) => {
   if (!sql) return null;
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4 mb-6 shadow-lg">
+    <div className="bg-gray-950 border border-gray-600 rounded-lg p-4 mb-6 shadow-lg">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-md font-semibold text-white flex items-center space-x-2">
           <Code className="w-4 h-4 text-green-400" />
           <span>Generated SQL</span>
         </h4>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-4">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="flex items-center space-x-1 text-gray-400 hover:text-white transition-colors"
@@ -46,7 +46,7 @@ const SQLDisplay = ({ sql, onCopy }) => {
             {sql}
           </pre>
           <div className="absolute top-2 right-2">
-            <span className="bg-green-600 text-green-100 text-xs px-2 py-1 rounded">SQL</span>
+            <span className="border border-green-600 text-green-600 text-xs px-2 py-1 rounded-full">SQL</span>
           </div>
         </div>
       )}

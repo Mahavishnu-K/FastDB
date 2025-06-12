@@ -41,11 +41,10 @@ const Sidebar = ({ tables, isOpen, onToggle, onTableSelect, selectedTable }) => 
     table.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getColumnIcon = (column) => {
-    if (column.primaryKey) return <Key className="w-3 h-3 text-yellow-400" />;
-    if (column.type.toLowerCase().includes('int')) return <Hash className="w-3 h-3 text-blue-400" />;
-    return <Columns className="w-3 h-3 text-gray-400" />;
-  };
+  // const getColumnIcon = (column) => {
+  //   if (column.type.toLowerCase().includes('int')) return <Hash className="w-3 h-3 text-blue-400" />;
+  //   return <Columns className="w-3 h-3 text-gray-400" />;
+  // };
 
   return (
     <>
@@ -127,14 +126,14 @@ const Sidebar = ({ tables, isOpen, onToggle, onTableSelect, selectedTable }) => 
 
                   {expandedNodes.tables && (
                     <div className="ml-4">
-                      {/* Tables Node */}
+                      {/* Tables Node
                       <div className="flex items-center space-x-2 p-2 mb-1">
                         <Table className="w-4 h-4 text-purple-400" />
                         <span className="text-sm font-medium text-gray-300">Tables</span>
                         <button className="ml-auto p-1 hover:bg-gray-600 rounded">
                           <Plus className="w-3 h-3 text-gray-400" />
                         </button>
-                      </div>
+                      </div> */}
 
                       {/* Table List */}
                       <div className="ml-4 space-y-1">
@@ -144,7 +143,7 @@ const Sidebar = ({ tables, isOpen, onToggle, onTableSelect, selectedTable }) => 
                             <div 
                               className={`flex items-center space-x-2 p-2 rounded cursor-pointer group ${
                                 selectedTable?.id === table.id 
-                                  ? 'bg-blue-600 text-white' 
+                                  ? 'bg-gray-800 text-white' 
                                   : 'hover:bg-gray-700 text-gray-300'
                               }`}
                               onClick={() => {
@@ -159,36 +158,36 @@ const Sidebar = ({ tables, isOpen, onToggle, onTableSelect, selectedTable }) => 
                               <Table className="w-4 h-4 text-orange-400" />
                               <span className="text-sm flex-1">{table.name}</span>
                               <span className="text-xs opacity-75">({table.data.length})</span>
-                              <div className="opacity-0 group-hover:opacity-100 flex space-x-1">
+                              {/* <div className="opacity-0 group-hover:opacity-100 flex space-x-1">
                                 <button className="p-1 hover:bg-gray-600 rounded">
                                   <Edit3 className="w-3 h-3" />
                                 </button>
-                                <button className="p-1 hover:bg-red-600 rounded">
+                                <button className="p-1 hover:bg-gray-600 rounded">
                                   <Trash2 className="w-3 h-3" />
                                 </button>
-                              </div>
+                              </div> */}
                             </div>
 
                             {/* Table Columns */}
                             {expandedTables[table.id] && (
                               <div className="ml-6 space-y-1">
-                                <div className="flex items-center space-x-2 p-1">
-                                  <Columns className="w-3 h-3 text-gray-500" />
+                                {/* <div className="flex items-center space-x-2 p-1">
+                                  //<Columns className="w-3 h-3 text-gray-500" />
                                   <span className="text-xs text-gray-500">Columns</span>
-                                </div>
+                                </div> */}
                                 {table.columns.map((column, idx) => (
                                   <div 
                                     key={idx}
                                     className="flex items-center space-x-2 p-1 pl-4 hover:bg-gray-700 rounded cursor-pointer"
                                   >
-                                    {getColumnIcon(column)}
+                                    {/* {getColumnIcon(column)} */}
                                     <span className="text-xs text-gray-300">{column.name}</span>
                                     <span className="text-xs text-gray-500">{column.type}</span>
                                     {column.primaryKey && (
-                                      <span className="text-xs bg-yellow-600 text-yellow-100 px-1 rounded">PK</span>
+                                      <span className="text-xs border border-gray-600 text-gray-400 px-1 rounded">PK</span>
                                     )}
                                     {!column.nullable && (
-                                      <span className="text-xs bg-red-600 text-red-100 px-1 rounded">NN</span>
+                                      <span className="text-xs border border-gray-600 text-gray-400 px-1 rounded">NN</span>
                                     )}
                                   </div>
                                 ))}
@@ -210,17 +209,17 @@ const Sidebar = ({ tables, isOpen, onToggle, onTableSelect, selectedTable }) => 
             <div className="space-y-2 text-xs">
               <div className="flex justify-between text-gray-300">
                 <span>Total Tables:</span>
-                <span className="text-blue-400">{tables.length}</span>
+                <span className="text-white">{tables.length}</span>
               </div>
               <div className="flex justify-between text-gray-300">
                 <span>Total Columns:</span>
-                <span className="text-green-400">
+                <span className="text-white">
                   {tables.reduce((sum, table) => sum + table.columns.length, 0)}
                 </span>
               </div>
               <div className="flex justify-between text-gray-300">
                 <span>Total Records:</span>
-                <span className="text-purple-400">
+                <span className="text-white">
                   {tables.reduce((sum, table) => sum + table.data.length, 0)}
                 </span>
               </div>

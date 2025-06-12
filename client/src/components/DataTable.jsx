@@ -23,7 +23,7 @@ const DataTable = ({ table, title = null }) => {
   );
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4 shadow-lg">
+    <div className="bg-gray-900 rounded-lg p-4 shadow-lg">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-lg font-semibold text-white flex items-center space-x-2">
           <Table className="w-5 h-5 text-blue-400" />
@@ -39,7 +39,7 @@ const DataTable = ({ table, title = null }) => {
               placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-gray-700 text-white placeholder-gray-400 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="bg-gray-800 text-white placeholder-gray-400 border border-gray-600 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <button className="text-gray-400 hover:text-white transition-colors">

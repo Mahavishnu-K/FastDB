@@ -59,19 +59,19 @@ const Schema = ({ tables, setTables }) => {
         <div className="flex space-x-3">
           <button 
             onClick={() => handleExport('json')}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+            className="border border-gray-600 hover:bg-gray-900 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
           >
             <Download className="w-4 h-4" />
             <span>Export JSON</span>
           </button>
           <button 
             onClick={() => handleExport('sql')}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+            className="border border-gray-600 hover:bg-gray-900 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
           >
             <FileText className="w-4 h-4" />
             <span>Export SQL</span>
           </button>
-          <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+          <button className="border border-gray-600 hover:bg-gray-900 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
             <Share2 className="w-4 h-4" />
             <span>Share</span>
           </button>
@@ -81,13 +81,13 @@ const Schema = ({ tables, setTables }) => {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Tables List */}
         <div className="lg:col-span-1">
-          <div className="bg-gray-800 rounded-lg p-4">
+          <div className="bg-gray-950 border border-gray-600 rounded-lg p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
                 <Database className="w-5 h-5 text-blue-400" />
                 <span>Tables ({tables.length})</span>
               </h3>
-              <button className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded">
+              <button className="border border-gray-600 hover:bg-gray-900 text-white p-2 rounded-md">
                 <Plus className="w-4 h-4" />
               </button>
             </div>
@@ -99,8 +99,8 @@ const Schema = ({ tables, setTables }) => {
                   onClick={() => setSelectedTable(table)}
                   className={`p-3 rounded cursor-pointer transition-colors ${
                     selectedTable?.id === table.id 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                      ? 'bg-gray-800 text-white' 
+                      : 'bg-gray-900 hover:bg-gray-800 text-gray-300'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -128,14 +128,14 @@ const Schema = ({ tables, setTables }) => {
         {/* Table Details */}
         <div className="lg:col-span-2">
           {selectedTable ? (
-            <div className="bg-gray-800 rounded-lg p-6">
+            <div className="bg-gray-950 border border-gray-600 rounded-lg p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold text-white">{selectedTable.name}</h3>
                 <div className="flex space-x-2">
-                  <button className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
+                  <button className="border border-gray-600 hover:bg-gray-900 text-white px-3 py-1 rounded text-sm">
                     Add Column
                   </button>
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                  <button className="border border-gray-600 hover:bg-gray-900 text-white px-3 py-1 rounded text-sm">
                     Edit Table
                   </button>
                 </div>
@@ -145,7 +145,7 @@ const Schema = ({ tables, setTables }) => {
               <div className="space-y-3">
                 <h4 className="text-lg font-medium text-white mb-3">Columns</h4>
                 {selectedTable.columns.map((column, idx) => (
-                  <div key={idx} className="bg-gray-700 rounded-lg p-4">
+                  <div key={idx} className="bg-gray-800 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         {column.primaryKey && <Key className="w-4 h-4 text-yellow-400" />}
@@ -156,17 +156,17 @@ const Schema = ({ tables, setTables }) => {
                       </div>
                       <div className="flex space-x-2">
                         {column.primaryKey && (
-                          <span className="bg-yellow-600 text-yellow-100 text-xs px-2 py-1 rounded">
+                          <span className="border border-gray-600 text-gray-400 text-xs px-2 py-1 rounded">
                             PRIMARY KEY
                           </span>
                         )}
                         {!column.nullable && (
-                          <span className="bg-red-600 text-red-100 text-xs px-2 py-1 rounded">
+                          <span className="border border-gray-600 text-gray-400 text-xs px-2 py-1 rounded">
                             NOT NULL
                           </span>
                         )}
                         {column.autoIncrement && (
-                          <span className="bg-blue-600 text-blue-100 text-xs px-2 py-1 rounded">
+                          <span className="border border-gray-600 text-gray-400 text-xs px-2 py-1 rounded">
                             AUTO INCREMENT
                           </span>
                         )}
@@ -184,16 +184,16 @@ const Schema = ({ tables, setTables }) => {
 
               {/* Table Statistics */}
               <div className="mt-6 grid grid-cols-3 gap-4">
-                <div className="bg-gray-700 rounded p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-400">{selectedTable.columns.length}</div>
+                <div className="bg-gray-800 rounded p-4 text-center">
+                  <div className="text-2xl font-bold text-white">{selectedTable.columns.length}</div>
                   <div className="text-gray-400 text-sm">Columns</div>
                 </div>
-                <div className="bg-gray-700 rounded p-4 text-center">
-                  <div className="text-2xl font-bold text-green-400">{selectedTable.data.length}</div>
+                <div className="bg-gray-800 rounded p-4 text-center">
+                  <div className="text-2xl font-bold text-white">{selectedTable.data.length}</div>
                   <div className="text-gray-400 text-sm">Rows</div>
                 </div>
-                <div className="bg-gray-700 rounded p-4 text-center">
-                  <div className="text-2xl font-bold text-purple-400">
+                <div className="bg-gray-800 rounded p-4 text-center">
+                  <div className="text-2xl font-bold text-white">
                     {selectedTable.columns.filter(col => col.primaryKey).length}
                   </div>
                   <div className="text-gray-400 text-sm">Primary Keys</div>
@@ -201,7 +201,7 @@ const Schema = ({ tables, setTables }) => {
               </div>
             </div>
           ) : (
-            <div className="bg-gray-800 rounded-lg p-12 text-center">
+            <div className="bg-gray-950 border border-gray-600 rounded-lg p-12 text-center">
               <Database className="w-16 h-16 text-gray-600 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-400 mb-2">Select a Table</h3>
               <p className="text-gray-500">Choose a table from the list to view its structure and details</p>

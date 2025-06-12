@@ -30,7 +30,7 @@ const NLInput = ({ onExecute, isLoading }) => {
   };
 
   return (
-    <div className="bg-gray-800 rounded-lg p-6 mb-6 shadow-lg">
+    <div className="bg-gray-950 border border-gray-600 rounded-lg p-6 mb-6 shadow-lg">
       <div className="flex items-center space-x-2 mb-4">
         <Lightbulb className="w-5 h-5 text-yellow-400" />
         <h3 className="text-lg font-semibold text-white">Natural Language Command</h3>
@@ -43,14 +43,14 @@ const NLInput = ({ onExecute, isLoading }) => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Type your command in plain English..."
-            className="flex-1 bg-gray-700 text-white placeholder-gray-400 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            placeholder="Type your command..."
+            className="flex-1 bg-gray-900 text-white placeholder-gray-400 border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all"
             disabled={isLoading}
           />
           <button
             onClick={handleSubmit}
             disabled={isLoading || !input.trim()}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 transition-colors"
+            className="border border-gray-600 bg-gray-900 disabled:bg-gray-950 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 transition-colors"
           >
             <Play className="w-4 h-4" />
             <span>{isLoading ? 'Processing...' : 'Execute'}</span>
@@ -67,7 +67,7 @@ const NLInput = ({ onExecute, isLoading }) => {
             <button
               key={idx}
               onClick={() => handleSuggestionClick(suggestion)}
-              className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white px-3 py-2 rounded-full transition-colors border border-gray-600 hover:border-gray-500"
+              className="text-xs bg-gray-800 hover:bg-gray-900 text-gray-300 hover:text-white px-3 py-2 rounded-full transition-colors border border-gray-600 hover:border-gray-500"
               disabled={isLoading}
             >
               {suggestion}
@@ -79,4 +79,4 @@ const NLInput = ({ onExecute, isLoading }) => {
   );
 };
 
-export default NLInput;
+export default NLInput; 

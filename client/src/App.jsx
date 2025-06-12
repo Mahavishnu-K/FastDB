@@ -167,7 +167,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen w-full bg-gray-950 overflow-x-hidden">
       <Header 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
@@ -185,9 +185,14 @@ export default function App() {
       <main className={`
         transition-all duration-300 ease-in-out
         ${isSidebarOpen ? 'lg:ml-80' : 'ml-0'}
-        container mx-auto px-6 py-8
+        w-full
+        ${isSidebarOpen ? 'lg:w-[calc(100%-20rem)]' : 'w-full'}
+        min-w-0
+        overflow-x-hidden
       `}>
-        {renderContent()}
+        <div className="container mx-auto px-6 py-8 max-w-full">
+          {renderContent()}
+        </div>
       </main>
     </div>
   );

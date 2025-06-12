@@ -6,7 +6,7 @@ const ERDiagram = ({ tables }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   return (
-    <div className={`bg-gray-800 rounded-lg p-6 shadow-lg ${isFullscreen ? 'fixed inset-4 z-50' : ''}`}>
+    <div className={`bg-gray-950 border border-gray-600 rounded-lg p-6 shadow-lg ${isFullscreen ? 'fixed inset-4 z-50' : ''}`}>
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-lg font-semibold text-white flex items-center space-x-2">
           <GitBranch className="w-5 h-5 text-purple-400" />
@@ -31,7 +31,7 @@ const ERDiagram = ({ tables }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
             {tables.map((table, index) => (
               <div key={table.id} className="bg-gray-800 rounded-lg border border-gray-600 overflow-hidden">
-                <div className="bg-blue-600 text-white px-4 py-2 font-semibold">
+                <div className="bg-gray-900 border-b-gray-600 text-white px-4 py-2 font-semibold">
                   {table.name}
                 </div>
                 <div className="p-4 space-y-2">
