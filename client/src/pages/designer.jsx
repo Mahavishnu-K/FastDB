@@ -28,25 +28,6 @@ const Designer = ({
       
       <ERDiagram tables={tables} />
       
-      {/* Quick Stats */}
-      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gray-800 rounded-lg p-6 text-center">
-          <div className="text-2xl font-bold text-blue-400 mb-2">{tables.length}</div>
-          <div className="text-gray-400">Tables Created</div>
-        </div>
-        <div className="bg-gray-800 rounded-lg p-6 text-center">
-          <div className="text-2xl font-bold text-green-400 mb-2">
-            {tables.reduce((sum, table) => sum + table.columns.length, 0)}
-          </div>
-          <div className="text-gray-400">Total Columns</div>
-        </div>
-        <div className="bg-gray-800 rounded-lg p-6 text-center">
-          <div className="text-2xl font-bold text-purple-400 mb-2">
-            {tables.reduce((sum, table) => sum + table.data.length, 0)}
-          </div>
-          <div className="text-gray-400">Total Records</div>
-        </div>
-      </div> */}
     </div>
   );
 };

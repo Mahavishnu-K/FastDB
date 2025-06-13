@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+pydantic_settings
+python-dotenv
+httpx
+mysql-connector-python
+psycopg2-binary
