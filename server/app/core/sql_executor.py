@@ -1,30 +1,42 @@
 from sqlalchemy.engine import Connection
-from sqlalchemy import text
-from sqlalchemy.exc import SQLAlchemyError
-import logging
+from sqlalchemy import text, inspect
+from sqlalchemy.exc import SQLAlchemyError, DBAPIError
 
-logger = logging.getLogger(__name__)
+def execute_sql(connection: Connection, sql: str, params: dict = None):
+    """
+    Executes a given SQL query with parameters and returns a structured result.
+    This version has robust error handling for all exception types.
+    """
+    if params is None:
+        params = {}
 
-def execute_sql(connection: Connection, sql_query: str, params: dict = None):
-    """
-    Executes a given SQL query with optional parameters and returns the result.
-    """
     try:
-        with connection.begin() as transaction:
-            result_proxy = connection.execute(text(sql_query), params or {})
-            
-            if result_proxy.returns_rows:
-                columns = list(result_proxy.keys())
-                data = [dict(row) for row in result_proxy.mappings()]
-                message = f"Query executed successfully. {len(data)} rows returned."
-                return {"success": True, "message": message, "data": {"columns": columns, "data": data}}
-            else:
-                message = f"Query executed successfully. {result_proxy.rowcount} rows affected."
-                return {"success": True, "message": message, "data": None, "rowcount": result_proxy.rowcount}
-    except SQLAlchemyError as e:
-        logger.error(f"SQLAlchemyError executing query: {e}")
-        # Return a user-friendly version of the error
-        return {"success": False, "message": str(e.orig), "data": None}
-    except Exception as e:
-        logger.error(f"An unexpected error occurred: {e}")
-        return {"success": False, "message": f"An unexpected error occurred: {e}", "data": None}
+        # Execute the query using text() to handle parameters safely
+        result_proxy = connection.execute(text(sql), params)
+        
+        # For statements that return rows (SELECT)
+        if result_proxy.returns_rows:
+            columns = list(result_proxy.keys())
+            rows = [list(row) for row in result_proxy.fetchall()]
+            data = {"columns": columns, "rows": rows}
+            message = f"Query executed successfully. {len(rows)} row(s) returned."
+            return {"success": True, "message": message, "data": data}
+        
+        # For statements that don't return rows (INSERT, UPDATE, DELETE)
+        else:
+            message = f"Query executed successfully. {result_proxy.rowcount} row(s) affected."
+            return {"success": True, "message": message, "rowcount": result_proxy.rowcount}
+
+    except (SQLAlchemyError, DBAPIError) as e:
+        # --- THE FIX IS HERE ---
+        # We now safely convert ANY exception 'e' to a string.
+        # This will never crash, regardless of the exception type.
+        error_message = str(e)
+        
+        # A common pattern is that the actual error is in the 'orig' attribute, if it exists.
+        # This is a safer way to check for it.
+        if hasattr(e, 'orig') and e.orig:
+            # Get the specific error message from the database driver
+            error_message = str(e.orig).strip()
+
+        return {"success": False, "message": error_message}

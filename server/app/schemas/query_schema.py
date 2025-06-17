@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Dict, Any, Optional
 
 class NLRequest(BaseModel):
@@ -23,6 +23,7 @@ class ExecuteRequest(BaseModel):
     sql: str
 
 class QueryResultData(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     columns: List[str]
     data: List[Dict[str, Any]]
 

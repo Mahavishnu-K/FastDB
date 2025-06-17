@@ -5,7 +5,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateTable
 
 from app.schemas.table_schema import FullSchemaResponse, TableSchema, TableColumnInfo, StatusResponse
-from app.db.engine import get_engine
+from app.db.session import get_engine
 from app.services import sql_builder
 
 router = APIRouter()
