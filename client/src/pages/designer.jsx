@@ -6,30 +6,23 @@ import ERDiagram from '../components/ERDiagram';
 
 const Designer = ({ 
   tables, 
+  mermaidString, // Get the new prop
   currentSQL, 
   isLoading, 
   queryResult, 
-  handleNLCommand 
+  handleNLCommand,
+  error
 }) => {
   return (
     <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-white mb-2">Database Designer</h2>
-        <p className="text-gray-400">Design your database schema using natural language</p>
-      </div>
-
+      {/* ... NLInput, SQLDisplay, DataTable are the same ... */}
       <NLInput onExecute={handleNLCommand} isLoading={isLoading} />
-      
       {currentSQL && <SQLDisplay sql={currentSQL} />}
+      {!error && queryResult && <DataTable table={queryResult} title="Query Results" />}
       
-      {queryResult && (
-        <DataTable table={queryResult} title="Query Results" />
-      )}
-      
-      <ERDiagram tables={tables} />
-      
+      {/* Pass the mermaid string down */}
+      <ERDiagram mermaidString={mermaidString} />
     </div>
   );
 };
-
 export default Designer;

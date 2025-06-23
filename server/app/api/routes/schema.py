@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Path
 from fastapi.responses import PlainTextResponse
+
 from sqlalchemy import inspect, Table, MetaData, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.schema import CreateTable
@@ -7,6 +8,7 @@ from sqlalchemy.schema import CreateTable
 from app.schemas.table_schema import FullSchemaResponse, TableSchema, TableColumnInfo, StatusResponse
 from app.db.session import get_engine
 from app.services import sql_builder
+from app.core.diagram_generator import generate_schema_as_mermaid 
 
 router = APIRouter()
 
@@ -92,3 +94,12 @@ async def export_schema_as_sql(engine: Engine = Depends(get_engine)):
             script += f"-- Could not generate CREATE statement for table '{table_name}': {e}\n\n"
     
     return script if script else "-- No tables found to export."
+
+@router.get("/mermaid", response_class=PlainTextResponse, tags=["Schema"])
+async def get_schema_as_mermaid(engine: Engine = Depends(get_engine)):
+    """Generates and returns a Mermaid.js ER diagram string for the current schema."""
+    try:
+        mermaid_string = generate_schema_as_mermaid(engine)
+        return mermaid_string
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate Mermaid diagram: {str(e)}")
