@@ -10,7 +10,7 @@ const Header = ({ onSidebarToggle }) => {
     { id: 'designer', label: 'Designer', path: '/designer' },
     { id: 'query', label: 'Query', path: '/query' },
     { id: 'schema', label: 'Schema', path: '/schema' },
-    { id: 'api', label: 'API', path: '/api' }
+    { id: 'api', label: 'API', path: '/apiDoc' }
   ];
 
   const handleTabClick = (path) => {

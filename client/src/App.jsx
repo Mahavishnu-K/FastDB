@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar';
 import Designer from './pages/Designer';
 import Query from './pages/Query';
 import Schema from './pages/Schema';
+import API from './pages/API';
 import TableEditor from './pages/TableEditor';
 
 // Import all API functions
@@ -106,46 +107,66 @@ function AppContent() {
     setQueryResult(null);
 
     try {
+      // Step 1: Always convert NL to SQL first
       const nlResponse = await api.convertNlToSql(input, selectedDb);
       if (nlResponse.query_type === "ERROR") throw new Error(nlResponse.explanation);
       setCurrentSQL(nlResponse.sql);
 
+      // --- START OF NEW LOGIC FOR SWITCHING ---
+      const queryType = nlResponse.query_type.toUpperCase();
+      const upperSql = nlResponse.sql.toUpperCase();
+
+      // Check if this is a database switching command
+      const isSwitchCommand = (queryType === 'OTHER' || queryType === 'USE') && (upperSql.includes('SWITCH') || upperSql.includes('USE '));
+      
+      if (isSwitchCommand) {
+        // Find the target database name from the LLM's extracted values
+        const targetDb = nlResponse.extracted_values?.text_values?.[0];
+
+        if (targetDb && databases.includes(targetDb.toLowerCase())) {
+          setSelectedDb(targetDb.toLowerCase());
+          setQueryResult({ // Provide user feedback
+            success: true,
+            message: `Successfully switched to database: ${targetDb.toLowerCase()}`
+          });
+        } else if (targetDb) {
+           setError(`Database '${targetDb}' does not exist. Cannot switch.`);
+           setQueryResult(null);
+        } else {
+           setError("Could not determine which database to switch to.");
+           setQueryResult(null);
+        }
+        setIsLoading(false); // Stop here, no need to execute SQL
+        return; 
+      }
+      // --- END OF NEW LOGIC FOR SWITCHING ---
+
       const execResponse = await api.executeSql(nlResponse.sql, selectedDb);
       setQueryResult(execResponse);
 
-      // --- THIS IS THE NEW LOGIC ---
-      const upperSql = nlResponse.sql.toUpperCase();
-      const queryType = nlResponse.query_type.toUpperCase();
-
-      if (['CREATE', 'ALTER', 'DROP'].includes(queryType)) {
-        // Use a small delay to allow the DB to process
+      if (['CREATE', 'ALTER', 'DROP'].includes(queryType) && upperSql.includes('DATABASE')) {
         setTimeout(async () => {
-          if (upperSql.includes('DATABASE')) {
-            // It's a database command, so re-fetch the list of databases
-            await fetchDatabases();
-
-            if (queryType === 'CREATE') {
-              // If we created a new DB, find its name and switch to it
-              const match = upperSql.match(/CREATE DATABASE\s+("?)([\w\d_]+)\1/);
-              if (match && match[2]) {
-                const newDbName = match[2];
-                // THIS IS THE KEY: Set the selectedDb state to the new DB name
-                setSelectedDb(newDbName.toLowerCase()); // Use lowercase as per convention
-              }
+          const freshDbList = await api.listDatabases();
+          setDatabases(freshDbList);
+          if (queryType === 'CREATE') {
+            const match = upperSql.match(/CREATE DATABASE\s+("?)([\w\d_]+)\1/);
+            if (match && match[2]) {
+              const newDbName = match[2].toLowerCase();
+              setSelectedDb(newDbName);
             }
           } else {
-            // It was a table command (CREATE/DROP TABLE), so just refresh the schema
-            fetchSchemaAndDiagram();
+            setSelectedDb('fastDB');
           }
-        }, 1000); // 1 second delay
+        }, 1000);
+      } else if (['CREATE', 'ALTER', 'DROP'].includes(queryType)) {
+          setTimeout(() => fetchSchemaAndDiagram(), 500);
       }
-      // --- END OF NEW LOGIC ---
 
     } catch (err) {
       const errorDetail = err.response?.data?.detail || err.message;
-      setError(errorDetail.includes('already exists') ? `Command failed: ${errorDetail}` : `An unknown error occurred: ${errorDetail}`);
+      setError(`Command failed: ${errorDetail}`);
     } finally {
-      setIsLoading(false);
+      if (isLoading) setIsLoading(false); // Ensure loading is always turned off
     }
   };
   
@@ -219,6 +240,7 @@ function AppContent() {
             <Route path="/designer" element={<Designer {...commonProps} />} />
             <Route path="/query" element={<Query {...commonProps} />} />
             <Route path="/schema" element={<Schema tables={schema} onTableDelete={handleTableDelete} />} />
+            <Route path="/apiDoc" element={<API/>} />
             <Route path="/table/new" element={<TableEditorWrapper />} />
             <Route path="*" element={<Navigate to="/designer" replace />} />
           </Routes>
