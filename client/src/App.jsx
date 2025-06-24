@@ -62,7 +62,7 @@ function AppContent() {
 
   const fetchSchemaAndDiagram = useCallback(async () => {
     if (!selectedDb) return;
-    setIsLoading(true);
+    // setIsLoading(true);
     try {
       setError('');
       // Fetch both schema and diagram concurrently
@@ -85,8 +85,6 @@ function AppContent() {
       setError(`Failed to fetch schema for ${selectedDb}: ${errorMsg}`);
       setSchema([]);
       setMermaidString('');
-    } finally {
-      setIsLoading(false);
     }
   }, [selectedDb]);
 
@@ -166,7 +164,7 @@ function AppContent() {
       const errorDetail = err.response?.data?.detail || err.message;
       setError(`Command failed: ${errorDetail}`);
     } finally {
-      if (isLoading) setIsLoading(false); // Ensure loading is always turned off
+      setIsLoading(false); 
     }
   };
   

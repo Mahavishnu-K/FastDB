@@ -17,7 +17,6 @@ const Query = ({
   const [savedQueries, setSavedQueries] = useState([]);
 
   useEffect(() => {
-    // Fetch history and saved queries when component mounts
     const fetchData = async () => {
       try {
         setQueryHistory(await api.getQueryHistory());
@@ -96,6 +95,24 @@ const Query = ({
             </div>
           </div>
           {/* Saved Queries component can be built out similarly */}
+          <div className="bg-gray-950 border border-gray-600 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
+              <Save className="w-5 h-5 text-green-400" />
+              <span>Saved Queries</span>
+            </h3>
+            <div className="pr-2 h-40 overflow-y-scroll">
+              <div className="space-y-2">
+                {savedQueries.map((query) => (
+                  <div key={query.id} className="bg-gray-800 rounded p-3 hover:bg-gray-900 transition-colors cursor-pointer">
+                    <div className="text-sm text-white font-medium">{query.name}</div>
+                    <div className="text-xs text-gray-400 mt-1 font-mono">
+                      {query.query.substring(0, 40)}...
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
