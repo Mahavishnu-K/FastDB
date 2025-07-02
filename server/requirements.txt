@@ -7,3 +7,4 @@ python-dotenv
 httpx
 mysql-connector-python
 psycopg2-binary
+sqlparse

@@ -13,3 +13,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env")
 
 settings = Settings()
+
+print("--- SETTINGS LOADED BY Pydantic ---")
+print(f"Host: {settings.POSTGRES_SERVER}")
+print(f"Port: {settings.POSTGRES_PORT}")
+print(f"User: {settings.POSTGRES_USER}")
+print(f"DB Name: {settings.POSTGRES_DB}")
+print("---------------------------------")

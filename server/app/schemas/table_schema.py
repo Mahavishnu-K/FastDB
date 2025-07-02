@@ -28,16 +28,16 @@ class DeleteDataRequest(BaseModel):
     table_name: str
     conditions: Dict[str, Any]
 
-class TableColumnInfo(BaseModel):
+class ColumnSchema(BaseModel):
     name: str
     type: str
-    nullable: bool
-    primary_key: bool
+    is_nullable: bool
+    is_primary_key: bool
     default: Optional[Any] = None
 
 class TableSchema(BaseModel):
     name: str
-    columns: List[TableColumnInfo]
+    columns: List[ColumnSchema]
     row_count: int
 
 class FullSchemaResponse(BaseModel):

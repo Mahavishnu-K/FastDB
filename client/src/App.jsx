@@ -45,7 +45,7 @@ function AppContent() {
     try {
       setError('');
       const dbList = await api.listDatabases();
-      const defaultDb = 'fastDB';
+      const defaultDb = 'fastdb';
       const sortedDbList = [defaultDb, ...dbList.filter(db => db !== defaultDb)];
       setDatabases(sortedDbList);
       if (sortedDbList.length > 0 && !selectedDb) {
@@ -107,6 +107,7 @@ function AppContent() {
     try {
       // Step 1: Always convert NL to SQL first
       const nlResponse = await api.convertNlToSql(input, selectedDb);
+      //console.log(nlResponse);
       if (nlResponse.query_type === "ERROR") throw new Error(nlResponse.explanation);
       setCurrentSQL(nlResponse.sql);
 
@@ -153,7 +154,7 @@ function AppContent() {
               setSelectedDb(newDbName);
             }
           } else {
-            setSelectedDb('fastDB');
+            setSelectedDb('fastdb');
           }
         }, 1000);
       } else if (['CREATE', 'ALTER', 'DROP'].includes(queryType)) {

@@ -27,6 +27,8 @@ class NLPEngine:
         # This is your most powerful prompt. We will use it as the main engine.
         self.universal_system_prompt = """You are a MASTER SQL EXPERT capable of generating ANY type of SQL query from basic to most advanced level for a PostgreSQL database. You MUST extract and use ALL specific values mentioned in the user's text.
 
+        Crucially, you MUST generate all database names as lowercase, unquoted identifiers.
+
 🔥 SUPREME CAPABILITIES:
 - All DDL (CREATE, ALTER, DROP) and DML (SELECT, INSERT, UPDATE, DELETE) operations.
 - Complex JOINs, nested subqueries, window functions, and Common Table Expressions (CTEs).

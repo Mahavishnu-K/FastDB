@@ -1,11 +1,14 @@
 # app/api/routes/data.py
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Header
 from sqlalchemy.engine import Connection, Engine
-from sqlalchemy import text
+from sqlalchemy import text, insert, Table, MetaData
+from typing import Dict, Tuple
 
 from app.schemas.table_schema import InsertDataRequest, UpdateDataRequest, DeleteDataRequest, StatusResponse
 from app.schemas.query_schema import QueryResponse, QueryResultData
+from app.schemas.data_schema import StructuredQueryRequest, InsertRequest
+
 from app.services import sql_builder
 from app.core.sql_executor import execute_sql
 from app.db.session import get_engine, get_db_connection
@@ -121,3 +124,106 @@ async def delete_data(
             raise HTTPException(status_code=400, detail=str(e))
 
     return StatusResponse(message=result["message"])
+
+
+def build_safe_sql(query: StructuredQueryRequest) -> Tuple[str, Dict]:
+    """
+    Builds a parameterized SQL query from the structured request
+    to prevent SQL injection.
+    """
+    # WARNING: This is a simplified builder. A real-world one would need
+    # more robust validation (e.g., checking for valid column names).
+    
+    if not query.table.isalnum(): # Basic sanitization
+        raise ValueError("Invalid table name")
+
+    params = {}
+    param_count = 1
+
+    # SELECT clause
+    columns = ", ".join(query.select) if query.select else "*"
+    sql = f"SELECT {columns} FROM {query.table}"
+
+    # WHERE clause
+    if query.where:
+        where_clauses = []
+        for col, op, val in query.where:
+            if not col.isalnum(): raise ValueError("Invalid column name")
+            
+            param_name = f"p{param_count}"
+            param_count += 1
+            
+            where_clauses.append(f"{col} {op} :{param_name}")
+            params[param_name] = val
+        sql += " WHERE " + " AND ".join(where_clauses)
+    
+    # ORDER BY clause
+    if query.order_by:
+        order_clauses = [f"{col} {direction}" for col, direction in query.order_by]
+        sql += " ORDER BY " + ", ".join(order_clauses)
+
+    # LIMIT and OFFSET
+    if query.limit is not None:
+        sql += " LIMIT :limit"
+        params["limit"] = query.limit
+    if query.offset is not None:
+        sql += " OFFSET :offset"
+        params["offset"] = query.offset
+        
+    return sql, params
+
+
+@router.post("/query", tags=["Data"])
+async def execute_structured_query(
+    request: StructuredQueryRequest,
+    x_target_database: str = Header(..., alias="X-Target-Database")
+):
+    engine = get_engine(x_target_database)
+    sql_command, params = build_safe_sql(request)
+    
+    with engine.connect() as connection:
+        result = connection.execute(text(sql_command), params)
+        columns = result.keys()
+        data = [dict(zip(columns, row)) for row in result.fetchall()]
+        
+    return {"data": data}
+
+@router.post("/{table_name}/insert", tags=["Data"])
+async def insert_data(
+    table_name: str,
+    request: InsertRequest,
+    x_target_database: str = Header(..., alias="X-Target-Database")
+):
+    """
+    Inserts one or more rows into a specified table.
+    This uses an efficient bulk insert method.
+    """
+    if not table_name.isalnum():
+        raise HTTPException(status_code=400, detail="Invalid table name.")
+    if not request.data:
+        return {"message": "No data provided to insert.", "rows_affected": 0}
+
+    engine = get_engine(x_target_database)
+
+    if not request.data[0]:
+        raise HTTPException(status_code=400, detail="Cannot insert empty row data.")
+    columns = request.data[0].keys()
+    
+    column_str = ", ".join(f'"{col}"' for col in columns)
+    
+    param_str = ", ".join(f":{col}" for col in columns)
+    
+    sql = f"INSERT INTO {table_name} ({column_str}) VALUES ({param_str})"
+    
+    try:
+         with engine.connect() as connection:
+            with connection.begin():
+                result = connection.execute(text(sql), request.data)
+            
+            return {
+                "message": f"Successfully inserted {result.rowcount} row(s) into '{table_name}'.",
+                "rows_affected": result.rowcount
+            }
+    except Exception as e:
+        # Catch errors like missing columns, constraint violations, etc.
+        raise HTTPException(status_code=400, detail=f"Failed to insert data: {e}")

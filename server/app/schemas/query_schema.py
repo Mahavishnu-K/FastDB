@@ -30,4 +30,9 @@ class QueryResultData(BaseModel):
 class QueryResponse(BaseModel):
     success: bool
     message: str
+    generated_sql: Optional[str] = None
     result: Optional[QueryResultData] = None
+
+class QueryCommand(BaseModel):
+    command: str
+    params: Optional[Dict[str, Any]] = None
