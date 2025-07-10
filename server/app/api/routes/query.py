@@ -17,24 +17,66 @@ import sqlparse
 
 router = APIRouter()
 
+STOP_WORDS = {
+    'a', 'an', 'the', 'all', 'any', 'both', 'each', 'every', 'few', 'more',
+    'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same',
+    'another', 'that', 'this', 'these', 'those', 'my', 'your', 'his', 'her', 'its',
+    'our', 'their',
+    'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them',
+    'myself', 'yourself', 'himself', 'herself', 'itself', 'ourselves', 'yourselves', 'themselves',
+    'is', 'are', 'was', 'were', 'be', 'being', 'been', 'have', 'has', 'had',
+    'do', 'does', 'did', 'can', 'will', 'would', 'should', 'could', 'may', 'might', 'must',
+    'show', 'give', 'tell', 'find', 'get', 'list', 'make', 'add', 'remove', 'change',
+    'calculate', 'display', 'generate', 'fetch', 'retrieve', 'count',
+    'of', 'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through',
+    'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in',
+    'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here',
+    'there',
+    'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'so', 'than', 'that',
+    'when', 'where', 'why', 'how', 'too', 'very', 'just', 'also', 'really', 'please',
+    'kindly', 'quickly', 'slowly',
+    'who', 'what', 'which'
+}
 
-def is_valid_sql(command: str) -> bool:
+SQL_KEYWORDS = {
+    'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'CALL', 'EXPLAIN', 'PLAN', 'WITH',
+    'CREATE', 'DROP', 'ALTER', 'TRUNCATE', 'RENAME', 'COMMENT',
+    'GRANT', 'REVOKE',
+    'COMMIT', 'ROLLBACK', 'SAVEPOINT', 'SET', 'TRANSACTION',
+    'FROM', 'WHERE', 'GROUP', 'BY', 'HAVING', 'ORDER', 'LIMIT', 'OFFSET', 'AS', 'ON',
+    'JOIN', 'INNER', 'LEFT', 'RIGHT', 'FULL', 'OUTER', 'CROSS',
+    'UNION', 'ALL', 'DISTINCT', 'VALUES', 'INTO', 'SET',
+    'TABLE', 'VIEW', 'INDEX', 'DATABASE', 'SCHEMA', 'PROCEDURE', 'FUNCTION',
+    'TRIGGER', 'SEQUENCE', 'TYPE', 'DOMAIN', 'USER', 'ROLE',
+    'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'CAST', 'CONVERT'
+}
+
+def is_likely_sql(command: str, threshold: float = 0.5) -> bool:
     """
-    Uses the sqlparse library to determine if a string is a single,
-    valid SQL statement.
+    A more robust heuristic to guess if a command is direct SQL.
+    Returns True if it's more likely to be SQL than natural language.
     """
-    try:
-        parsed = sqlparse.parse(command)
-        if len(parsed) != 1:
-            return False
-        statement = parsed[0]
-        if not statement.tokens:
-            return False
-        if statement.get_type() == 'UNKNOWN':
-            return False
-        return True
-    except Exception:
+    command = command.strip()
+    if not command:
         return False
+
+    first_word = command.split()[0].upper()
+    if first_word not in SQL_KEYWORDS:
+        return False
+    words = [word.lower().strip(';,()') for word in command.split()]
+    if not words:
+        return False
+        
+    stop_word_count = sum(1 for word in words if word in STOP_WORDS)
+    word_count = len(words)
+    
+    stop_word_ratio = stop_word_count / word_count
+    if stop_word_ratio > 0.25:
+        return False
+    if command.endswith(';'):
+        return True
+
+    return True
 
 def substitute_params(prompt: str, params: Dict[str, Any]) -> str:
     
@@ -46,7 +88,7 @@ def substitute_params(prompt: str, params: Dict[str, Any]) -> str:
         prompt = prompt.replace(f'{{{key}}}', escaped_value)
     return prompt
 
-@router.post("/", response_model=QueryResponse, tags=["SDK"]) # Mounted at /api/query
+@router.post("/", response_model=QueryResponse, tags=["SDK"])
 async def run_nlp_command(
     request: QueryCommand, # Use the simple QueryCommand schema
     x_target_database: str = Header(..., alias="X-Target-Database"),
@@ -69,7 +111,7 @@ async def run_nlp_command(
         raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found or connection failed: {e}")
 
     # === THE ONLY CHANGE IS THIS IF CONDITION ===
-    if is_valid_sql(final_prompt):
+    if is_likely_sql(final_prompt):
         # --- SQL BYPASS PATH ---
         print(f"INFO: Valid SQL detected. Bypassing NLP engine.")
         sql_to_execute = final_prompt
