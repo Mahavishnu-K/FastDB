@@ -51,6 +51,8 @@ from app.db.base import Base
 # Import all of your models here
 from app.models.history_model import QueryHistory
 from app.models.saved_query_model import SavedQuery
+from app.models.user_model import User
+from app.models.virtual_database_model import VirtualDatabase
 
 # Set the target_metadata to your Base's metadata
 target_metadata = Base.metadata

@@ -1,29 +1,37 @@
 import axios from 'axios';
 
-const apiKey = import.meta.env.VITE_FASTDB_API_KEY;
-
-if (!apiKey) {
-  const errorMsg = "FATAL: VITE_FASTDB_API_KEY is not defined in your .env.local file.";
-  console.error(errorMsg);
- 
-}
-
 const API_URL = 'http://localhost:8000/api';
 
 const apiClient = axios.create({
   baseURL: API_URL,
 });
 
-apiClient.interceptors.request.use(
-  (config) => {
-    // Always add the Authorization header from your environment
-    config.headers['Authorization'] = `Bearer ${apiKey}`;
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+export const initializeApiClient = (token) => {
+  // Use an interceptor to dynamically add the latest token to every request.
+  // This is better than setting a default header, as the token might be refreshed.
+  apiClient.interceptors.request.use(
+    (config) => {
+      // The token can be either a JWT from login or an API key from .env for testing.
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
+};
+
+const authApiClient = axios.create({ baseURL: 'http://localhost:8000' });
+
+export const loginUser = async (email, password) => {
+    const response = await authApiClient.post('/auth/login', { email, password });
+    return response.data; // returns { access_token, token_type }
+};
+
+export const signupUser = async (name, email, password) => {
+    const response = await authApiClient.post('/auth/signup', { name, email, password });
+    return response.data;
+};
 
 // ---- Database & Schema Endpoints ----
 
@@ -69,8 +77,8 @@ export const convertNlToSql = async (command, dbName) => {
   return response.data;
 };
 
-export const executeSql = async (sql, dbName) => {
-  const response = await apiClient.post('/query/execute', { sql }, {
+export const executeCommand = async (command, dbName) => {
+  const response = await apiClient.post('/query/', { command }, {
     headers: { 'X-Target-Database': dbName }
   });
   return response.data;

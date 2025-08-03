@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .api.api import api_router
+from .api.routes.auth import auth_router
 from .api.routes import health 
 
 from fastapi import Request
@@ -26,6 +27,7 @@ origins = [
     "http://localhost",
     "http://localhost:3000",
     "http://localhost:5173", # Default for Vite
+    "http://localhost:5174", 
 ]
 
 app.add_middleware(
@@ -50,6 +52,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
 
 # Include the main API router
 app.include_router(api_router, prefix="/api")
+app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
 app.include_router(health.router) 
 

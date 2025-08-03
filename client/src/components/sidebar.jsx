@@ -1,5 +1,5 @@
 import React from 'react';
-import { Database, Table, ChevronRight, ChevronDown, X, Search } from 'lucide-react';
+import { Database, Table, X, LogOut } from 'lucide-react'; // Import LogOut icon
 
 const Sidebar = ({ 
   isOpen, 
@@ -8,7 +8,8 @@ const Sidebar = ({
   selectedDb, 
   onDbChange,
   tables,
-  onTableSelect
+  onTableSelect,
+  onLogout 
 }) => {
   
   return (
@@ -45,7 +46,13 @@ const Sidebar = ({
               onChange={(e) => onDbChange(e.target.value)}
               className="w-full bg-gray-800 text-white p-2 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
             >
-              {databases.map(db => <option key={db} value={db}>{db}</option>)}
+              {/* --- THIS IS THE FIX --- */}
+              {/* Map over the array of objects and use the correct properties */}
+              {databases.map(db => (
+                <option key={db.id} value={db.virtual_name}>
+                  {db.virtual_name}
+                </option>
+              ))}
             </select>
         </div>
 
@@ -73,14 +80,24 @@ const Sidebar = ({
             </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-gray-700">
+        {/* --- UPDATED FOOTER --- */}
+        <div className="p-4 border-t border-gray-700 space-y-4">
+          {/* Connection Status */}
           <div className="flex items-center justify-between">
             <div className="text-xs text-gray-500">
               Connected to: {selectedDb}
             </div>
-            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
           </div>
+          
+          {/* Logout Button */}
+          <button 
+            onClick={onLogout}
+            className="w-full flex items-center justify-center space-x-3 p-3 rounded-lg text-gray-400 border border-gray-700 hover:bg-red-900/30 hover:border-red-500/40 hover:text-red-400 transition-colors duration-200"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="font-semibold text-sm">Logout</span>
+          </button>
         </div>
       </div>
     </>

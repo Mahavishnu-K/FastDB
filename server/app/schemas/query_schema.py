@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 
 class NLRequest(BaseModel):
     command: str
@@ -27,11 +27,14 @@ class QueryResultData(BaseModel):
     columns: List[str]
     data: List[Dict[str, Any]]
 
+class QueryResultMetadata(BaseModel):
+    rows_affected: int
+
 class QueryResponse(BaseModel):
     success: bool
     message: str
     generated_sql: Optional[str] = None
-    result: Optional[QueryResultData] = None
+    result: Optional[Union[QueryResultData, QueryResultMetadata, Dict[str, Any]]] = None
 
 class QueryCommand(BaseModel):
     command: str
