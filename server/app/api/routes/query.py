@@ -193,13 +193,13 @@ async def run_nlp_command(
     except Exception as e:
         # Log the failed query
         history_service.log_query_history(
-            db=db_session, command=request.command, sql=sql_to_execute, status="error"
+            db=db_session, owner=current_user, command=request.command, sql=sql_to_execute, status="error"
         )
         raise HTTPException(status_code=400, detail=f"SQL Execution Error: {e}")
 
     # --- Step 3: Log success and format the response ---
     history_service.log_query_history(
-        db=db_session, command=final_prompt, sql=sql_to_execute, status="success"
+        db=db_session, owner=current_user, command=final_prompt, sql=sql_to_execute, status="success"
     )
 
     # Transform data for frontend/SDK compatibility if necessary

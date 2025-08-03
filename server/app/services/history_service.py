@@ -1,13 +1,18 @@
+# app/services/history_service.py
 from sqlalchemy.orm import Session
 from app.models import QueryHistory, SavedQuery
+from app.models.user_model import User
 from app.schemas.history_schema import SavedQueryCreate
 
-def get_query_history(db: Session, limit: int = 50):
-    return db.query(QueryHistory).order_by(QueryHistory.executed_at.desc()).limit(limit).all()
+def get_query_history(db: Session, *, owner: User, limit: int = 50):
+    """Gets the query history ONLY for the specified owner."""
+    return db.query(QueryHistory).filter(QueryHistory.user_id == owner.user_id).order_by(QueryHistory.executed_at.desc()).limit(limit).all()
 
-def log_query_history(db: Session, command: str, sql: str, status: str):
+def log_query_history(db: Session, *, owner: User, command: str, sql: str, status: str):
+    """Logs a query history entry for the specified owner."""
     query_type = sql.strip().split()[0].upper()
     db_history = QueryHistory(
+        user_id=owner.user_id, 
         command_text=command,
         generated_sql=sql,
         status=status,
@@ -18,11 +23,17 @@ def log_query_history(db: Session, command: str, sql: str, status: str):
     db.refresh(db_history)
     return db_history
 
-def get_saved_queries(db: Session):
-    return db.query(SavedQuery).order_by(SavedQuery.name).all()
+def get_saved_queries(db: Session, *, owner: User):
+    """Gets the saved queries ONLY for the specified owner."""
+    return db.query(SavedQuery).filter(SavedQuery.user_id == owner.user_id).order_by(SavedQuery.name).all()
 
-def save_query(db: Session, query: SavedQueryCreate):
-    db_query = SavedQuery(name=query.name, query=query.query)
+def save_query(db: Session, *, owner: User, query: SavedQueryCreate):
+    """Saves a query for the specified owner."""
+    db_query = SavedQuery(
+        user_id=owner.user_id, 
+        name=query.name, 
+        query=query.query
+    )
     db.add(db_query)
     db.commit()
     db.refresh(db_query)
