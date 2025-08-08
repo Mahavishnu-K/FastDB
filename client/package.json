@@ -6,17 +6,23 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.13.12",
     "axios": "^1.10.0",
-    "framer-motion": "^12.23.9",
+    "framer-motion": "^12.23.12",
     "lucide-react": "^0.513.0",
     "mermaid": "^11.7.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-router-dom": "^7.6.2"
+    "react-hot-toast": "^2.5.2",
+    "react-resizable-panels": "^3.0.4",
+    "react-router-dom": "^7.6.2",
+    "recharts": "^3.1.2",
+    "sql-formatter": "^15.6.6",
+    "zustand": "^5.0.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
