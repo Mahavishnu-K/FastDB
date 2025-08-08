@@ -125,9 +125,11 @@ async def run_nlp_command(
         schema_context = generate_schema_as_mermaid(engine)
         nl_response = await convert_nl_to_sql(final_prompt, schema_context)
         
-        if nl_response["query_type"] == "ERROR":
-            raise HTTPException(status_code=400, detail=f"NLP Error: {nl_response['explanation']}")
-        sql_to_execute = nl_response["sql"]
+        if nl_response.get("query_type") == "ERROR":
+            error_msg = nl_response.get("explanation", "Unknown error from NLP engine.")
+            raise HTTPException(status_code=400, detail=f"NLP Error: {error_msg}")
+        
+        sql_to_execute = nl_response.get("sql")
     
     # --- NEW: SPECIAL HANDLING FOR ADMIN COMMANDS ---
     upper_sql = sql_to_execute.strip().upper()
