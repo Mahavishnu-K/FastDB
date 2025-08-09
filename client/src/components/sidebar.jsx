@@ -138,7 +138,7 @@ const Sidebar = ({ isOpen, onToggle, databases, selectedDb, onDbChange, onTableS
                                 <button onClick={() => handleToggleExpand(table.id, 'table')} className="p-0.5 mr-1">
                                   <motion.div animate={{ rotate: isTableExpanded ? 90 : 0 }}><ChevronRight className="w-3.5 h-3.5" /></motion.div>
                                 </button>
-                                <Table className="w-4 h-4 text-purple-500 mr-2" />
+                                <Table className="w-4 h-4 text-blue-500 mr-2" />
                                 <span onClick={() => onTableSelect(table, db.virtual_name)} className="text-sm flex-1 cursor-pointer">{table.name}</span>
                               </div>
                               {isTableExpanded && (

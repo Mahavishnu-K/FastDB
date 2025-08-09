@@ -1,4 +1,5 @@
-import { Check, Copy, Menu, Square, User } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Check, Copy, LucideNotebookText, Menu, Square, User } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -6,13 +7,16 @@ import { useLocation, useNavigate } from 'react-router-dom';
  * Renders the main application header with navigation, a theme switcher, and a user profile menu.
  * @param {object} props - The component props.
  * @param {Function} props.onSidebarToggle - Callback function to toggle the sidebar visibility.
+ * @param {Function} props.onScratchpadToggle - Callback function to toggle the scratchpad visibility.
  */
-const Header = ({ onSidebarToggle }) => {
+const Header = ({ onSidebarToggle, onScratchpadToggle }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileMenuRef = useRef(null);
   const [copied, setCopied] = useState(false);
+  const [copiedText, setCopiedText] = useState(false);
+
 
   // Mock user data. In a real application, this would come from a context or a user state.
   const user = {
@@ -22,16 +26,15 @@ const Header = ({ onSidebarToggle }) => {
   };
 
   const tabs = [
-    // { id: 'designer', label: 'Designer', path: '/designer' },
+    { id: 'dashboard', label: 'Dashboard', path: '/dashboard' },
     { id: 'query', label: 'Query', path: '/query' },
     { id: 'schema', label: 'Schema', path: '/schema' },
-    // { id: 'api', label: 'API', path: '/api' },
   ];
 
   const handleTabClick = (path) => navigate(path);
 
   const isActiveTab = (tabPath) => {
-    if (tabPath === '/schema' && location.pathname.startsWith('/table/')) {
+    if (tabPath === '/schema' && (location.pathname.startsWith('/table/') || location.pathname.startsWith('/schema/builder'))) {
       return true;
     }
     return location.pathname === tabPath;
@@ -40,23 +43,21 @@ const Header = ({ onSidebarToggle }) => {
   const handleCopyApiKey = () => {
     navigator.clipboard.writeText(user.apiKey);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
+    setCopiedText(true);
+    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopiedText(false), 1500);
   };
 
   // Effect to handle closing the profile menu when clicking outside
   useEffect(() => {
     if (!isProfileOpen) return;
-
     const handleClickOutside = (event) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setIsProfileOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isProfileOpen]);
 
   return (
@@ -64,9 +65,9 @@ const Header = ({ onSidebarToggle }) => {
       <div className="flex items-center justify-between">
         {/* Left Section */}
         <div className="flex items-center space-x-3">
-          <button onClick={onSidebarToggle} className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800" title="Toggle Schema Explorer">
+          <motion.button whileTap={{ scale: 0.9 }} onClick={onSidebarToggle} className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800" title="Toggle Schema Explorer">
             <Menu className="w-5 h-5 text-text-muted-light dark:text-text-muted-dark" />
-          </button>
+          </motion.button>
           <div className="flex items-center space-x-2">
             <Square className="w-5 h-5 text-blue-500" />
             <div>
@@ -74,10 +75,11 @@ const Header = ({ onSidebarToggle }) => {
             </div>
           </div>
         </div>
+        
+        {/* Center Section: Navigation */}
 
         {/* Right Section: Theme Switcher and Profile */}
         <div className="flex items-center space-x-2">
-          {/* Center Section: Navigation */}
           <nav className="hidden md:flex items-center space-x-1">
             {tabs.map((tab) => (
               <button
@@ -93,19 +95,25 @@ const Header = ({ onSidebarToggle }) => {
               </button>
             ))}
           </nav>
+           <motion.button whileTap={{ scale: 0.9 }} onClick={onScratchpadToggle} className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800" title="Toggle Scratchpad">
+            <LucideNotebookText className="w-5 h-5 text-text-muted-light dark:text-text-muted-dark" />
+          </motion.button>
           <div className="relative">
-            <button
+            <motion.button
+              whileTap={{ scale: 0.9 }}
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 transition-shadow"
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700"
             >
               <User className="w-4 h-4 text-text-muted-light dark:text-text-muted-dark" />
-            </button>
+            </motion.button>
 
             {/* Profile Popup */}
             {isProfileOpen && (
-              <div
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
                 ref={profileMenuRef}
-                className="absolute top-full right-0 mt-2 w-64 bg-fg-light dark:bg-fg-dark border border-border-light dark:border-border-dark rounded-md p-3 z-20"
+                className="absolute top-full right-0 mt-2 w-64 bg-fg-light dark:bg-fg-dark border border-border-light dark:border-border-dark rounded-md p-3 z-20 shadow-lg"
               >
                 <div className="border-b border-border-light dark:border-border-dark pb-2 mb-2">
                   <p className="font-semibold text-sm">{user.name}</p>
@@ -115,12 +123,13 @@ const Header = ({ onSidebarToggle }) => {
                   <label className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">API Key</label>
                   <div className="flex items-center space-x-2 mt-1 p-2 bg-bg-light dark:bg-bg-dark border border-border-light dark:border-border-dark rounded-md">
                     <code className="text-xs font-mono text-text-light dark:text-text-dark truncate flex-1">{user.apiKey}</code>
-                    <button onClick={handleCopyApiKey} title="Copy API Key">
+                    <button onClick={handleCopyApiKey} title="Copy API Key" className="relative">
                       {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-text-muted-light dark:text-text-muted-dark" />}
+                      {copiedText && <motion.span initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0}} className="absolute -top-6 -left-4 text-xs bg-slate-800 text-white px-2 py-0.5 rounded-md">Copied!</motion.span>}
                     </button>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>

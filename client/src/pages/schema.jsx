@@ -1,4 +1,4 @@
-import { ChevronsRight, Database, Edit, GitPullRequest, Loader, Plus, Trash2, ListTree, Eye, MessageSquare, X } from 'lucide-react';
+import { ChevronsRight, Database, Edit, GitPullRequest, Loader, Plus, Trash2, ListTree, Eye, MessageSquare, X, FileCode } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as api from '../services/apiServices';
@@ -7,7 +7,7 @@ import { toast } from 'react-hot-toast';
 import { useConfirm } from '../contexts/ConfirmationContext';
 import { usePrompt } from '../contexts/InputContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import DataTable from '../components/DataTable'; // DataTable is now used directly on the page
+import DataTable from '../components/DataTable';
 
 // The SchemaDiffModal component remains unchanged and is kept for the "Compare" feature
 const SchemaDiffModal = ({ databases, selectedDb, onClose }) => {
@@ -235,10 +235,11 @@ const SchemaPage = ({ onTableDelete }) => {
       
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">Database Schema</h2>
+          <h2 className="text-xl font-medium">Database Schema</h2>
           <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Manage and compare your database structure</p>
         </div>
         <div className="flex items-center space-x-2">
+            <button onClick={() => navigate('/schema/builder')} className="border border-border-light dark:border-border-dark text-sm font-medium px-3 py-1.5 rounded-md flex items-center space-x-2"><FileCode className="w-4 h-4" /><span>Builder</span></button>
             <button onClick={handleStartDiff} className="border border-border-light dark:border-border-dark text-sm font-medium px-3 py-1.5 rounded-md flex items-center space-x-2"><GitPullRequest className="w-4 h-4" /><span>Compare</span></button>
             <button onClick={() => navigate('/table/new')} className="bg-blue-600 text-white text-sm font-medium px-3 py-1.5 rounded-md flex items-center space-x-2"><Plus className="w-4 h-4" /><span>New Table</span></button>
         </div>
@@ -288,7 +289,7 @@ const SchemaPage = ({ onTableDelete }) => {
                             </div>
                             <div className="flex items-center space-x-2">
                                 <button onClick={() => handleEditAnnotation(column.name)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1"><MessageSquare className="w-3.5 h-3.5 text-text-muted-light dark:text-text-muted-dark" /></button>
-                                {column.primary_key && <span className="text-2xs font-bold text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded-full">PK</span>}
+                                {column.primary_key && <span className="text-2xs font-medium text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded-full">PK</span>}
                                 {!column.nullable && <span className="text-2xs font-semibold bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full">NOT NULL</span>}
                             </div>
                         </div>
@@ -349,7 +350,7 @@ const SchemaPage = ({ onTableDelete }) => {
                     <div className="h-[50vh] flex flex-col">
                         <div className="flex items-center justify-between p-3 border border-border-light dark:border-border-dark bg-fg-light dark:bg-fg-dark rounded-lg mb-4">
                              <h3 className="font-semibold text-sm text-text-light dark:text-text-dark">
-                                Preview: <span className="font-bold text-blue-500">{previewTableName}</span>
+                                Preview: <span className="font-medium text-blue-500">{previewTableName}</span>
                             </h3>
                             <button onClick={() => setPreviewData(null)} className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800">
                                 <X className="w-4 h-4" />

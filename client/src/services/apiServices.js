@@ -174,6 +174,23 @@ export const saveQuery = async (name, query) => {
 }
 
 /**
+ * Deletes a saved query.
+ * @param {string} queryId - The ID of the query to delete.
+ * @returns {Promise<object>}
+ */
+export const deleteSavedQuery = async (queryId) => {
+    // MOCK: This would call a real backend endpoint `DELETE /history/saved-queries/{queryId}`
+    await new Promise(res => setTimeout(res, 300));
+    console.log(`Mock deleted query with ID: ${queryId}`);
+    // Simulate success
+    if (queryId) {c
+        return { success: true, message: "Query deleted" };
+    } else {
+        throw new Error("Invalid query ID for deletion.");
+    }
+};
+
+/**
  * Fetches a query performance analysis (EXPLAIN).
  * @param {string} query - The SQL query to analyze.
  * @param {string} dbName - The target database name.
