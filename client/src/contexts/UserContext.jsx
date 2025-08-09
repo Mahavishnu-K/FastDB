@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import * as api from '../services/apiServices'; 
+import { initializeApiClient } from '../services/apiServices';
 
 const UserContext = createContext();
 
@@ -9,32 +11,29 @@ export const UserProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // This effect runs only once when the app component mounts
-        try {
-            // --- THE FIX IS HERE ---
-            // Try to get the user object from localStorage
-            const savedUser = localStorage.getItem('user');
-
-            if (savedUser) {
-                // If found, parse it and set it as the initial state
-                setUser(JSON.parse(savedUser));
+        const initializeSession = async () => {
+            const token = localStorage.getItem('accessToken');
+            
+            if (token) {
+                initializeApiClient(token);
+                try {
+                    const userData = await api.getMyProfile();
+                    setUser(userData); 
+                } catch (error) {
+                    console.error("Session token is invalid, logging out.", error);
+                    localStorage.removeItem('accessToken');
+                    setUser(null);
+                }
             }
-        } catch (error) {
-            console.error("Failed to parse user from localStorage", error);
-            // If parsing fails, ensure user is null
-            setUser(null);
-        } finally {
-            // We're done checking, so set loading to false
-            setIsLoading(false);
-        }
+            setIsLoading(false); 
+        };
+
+        initializeSession();
     }, []);
     
-    // Create a logout function to be used globally
     const logout = () => {
         localStorage.removeItem('accessToken');
-        localStorage.removeItem('user');
         setUser(null);
-        // Full page reload to ensure all state is cleared
         window.location.href = '/login';
     };
 
@@ -42,7 +41,7 @@ export const UserProvider = ({ children }) => {
         user,
         setUser,
         isLoading,
-        logout, // Provide the logout function to the context
+        logout,
     };
 
     return (

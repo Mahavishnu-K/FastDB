@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status, Depends, Request
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
+from fastapi.security import OAuth2PasswordBearer
 from app.schemas.user import TokenData
 
 from sqlalchemy.orm import Session
@@ -9,6 +10,8 @@ from app.services.user_service import get_user_by_api_key
 from app.services import user_service
 
 from .config import settings
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 def create_access_token(data: dict):
     to_encode = data.copy()
@@ -71,3 +74,13 @@ async def get_current_user(
         
         print("DEBUG: Authenticated user via API Key.")
         return user
+    
+def get_current_user_from_session(
+    token: str = Depends(oauth2_scheme), 
+    db: Session = Depends(get_db_session)
+):
+    """
+    A dependency that ONLY validates a JWT session token.
+    Useful for account management endpoints.
+    """
+    return _decode_jwt_and_get_user(token=token, db=db)

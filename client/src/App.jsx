@@ -2,14 +2,12 @@ import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Navigate, Route, BrowserRouter as Router, Routes, useNavigate } from 'react-router-dom';
 
 // Layout, Route, & Core Components
-import Header from './components/Header';
+import Header from './components/header';
 import Sidebar from './components/Sidebar';
-import { CommandPalette, CommandPaletteProvider, useCommandPalette } from './components/command/CommandPalette';
+import { CommandPalette, useCommandPalette } from './components/command/CommandPalette';
 import ProtectedRoute from './components/protectedRoute';
 import WelcomeModal from './components/WelcomeModal';
-import { UserProvider, useUser } from './contexts/UserContext';
-import { ConfirmationProvider } from './contexts/ConfirmationContext';
-import { InputProvider } from './contexts/InputContext'; // --- IMPORT NEW PROVIDER ---
+import { useUser } from './contexts/UserContext';
 
 // State Management
 import { useAppStore } from './store/useAppStore';
@@ -110,12 +108,8 @@ function DashboardLayout() {
 }
 
 export default function App() {
-    const [isInitialized, setIsInitialized] = useState(false);
-
+  
     useEffect(() => {
-        const token = localStorage.getItem('accessToken');
-        if (token) initializeApiClient(token);
-        setIsInitialized(true);
         if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         } else {
@@ -138,26 +132,16 @@ export default function App() {
         return null;
     }
 
-    if (!isInitialized) return <div className="flex items-center justify-center h-screen bg-bg-light dark:bg-bg-dark">Loading...</div>;
-
     return (
         <Router>
-          <UserProvider>
-            <CommandPaletteProvider>
-              <ConfirmationProvider>
-                <InputProvider> {/* --- WRAP WITH INPUT PROVIDER --- */}
-                  <CommandPaletteHotkeys />
-                  <CommandPalette />
-                  <Suspense fallback={<div className="flex items-center justify-center h-screen bg-bg-light dark:bg-bg-dark">Loading...</div>}>
-                    <Routes>
-                      <Route path="/login" element={<LoginPage />} />
-                      <Route path="/*" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>} />
-                    </Routes>
-                  </Suspense>
-                </InputProvider>
-              </ConfirmationProvider>
-            </CommandPaletteProvider>
-          </UserProvider>
+          <CommandPaletteHotkeys />
+          <CommandPalette />
+          <Suspense fallback={<div className="flex items-center justify-center h-screen bg-bg-light dark:bg-bg-dark">Loading...</div>}>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/*" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>} />
+            </Routes>
+          </Suspense>
         </Router>
     );
 }

@@ -12,6 +12,7 @@ import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import * as api from '../services/apiServices';
 import { initializeApiClient } from '../services/apiServices';
+import { useUser } from '../contexts/UserContext'; 
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -19,6 +20,7 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { setUser } = useUser();
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -38,6 +40,9 @@ const LoginPage = () => {
 
       localStorage.setItem('accessToken', data.access_token);
       initializeApiClient(data.access_token);
+
+      const profile = await api.getMyProfile();
+      setUser(profile);
 
       toast.success('Login Successful!');
       navigate('/query');
