@@ -35,6 +35,68 @@ def add_member_to_db(db: Session, *, inviter: User, virtual_db: VirtualDatabase,
     db.refresh(new_member)
     return new_member
 
+def update_member_role(
+    db: Session,
+    *,
+    updater: User,
+    virtual_db: VirtualDatabase,
+    member_user_id: str,
+    new_role: DBRole
+) -> DatabaseMember:
+    """Updates the role of an existing member in a database."""
+    # Authorization Check 1: Only the owner can change roles.
+    if virtual_db.user_id != updater.user_id:
+        raise PermissionError("Only the database owner can change member roles.")
+
+    # Authorization Check 2: The owner cannot change their own role via this method.
+    if member_user_id == updater.user_id:
+        raise ValueError("The owner's role cannot be changed.")
+
+    # Find the specific membership record to update.
+    member_record = db.query(DatabaseMember).filter_by(
+        database_id=virtual_db.id,
+        user_id=member_user_id
+    ).first()
+
+    if not member_record:
+        raise ValueError("Member not found in this database.")
+
+    # Update the role, commit, and refresh.
+    member_record.role = new_role
+    db.commit()
+    db.refresh(member_record)
+    return member_record
+
+def remove_member_from_db(
+    db: Session,
+    *,
+    revoker: User,
+    virtual_db: VirtualDatabase,
+    member_user_id: str
+):
+    """Removes a collaborator's access to a database."""
+    # Authorization Check 1: Only the owner can remove members.
+    if virtual_db.user_id != revoker.user_id:
+        raise PermissionError("Only the database owner can remove members.")
+
+    # Authorization Check 2: The owner cannot remove themselves.
+    if member_user_id == revoker.user_id:
+        raise ValueError("The owner cannot be removed from their own database.")
+
+    # Find the specific membership record to delete.
+    member_record = db.query(DatabaseMember).filter_by(
+        database_id=virtual_db.id,
+        user_id=member_user_id
+    ).first()
+
+    if not member_record:
+        raise ValueError("Member not found in this database.")
+
+    # Delete the record and commit the change.
+    db.delete(member_record)
+    db.commit()
+    return 
+
 def get_database_members(db: Session, *, virtual_db: VirtualDatabase) -> List[DatabaseMember]:
     """Lists all members of a virtual database."""
     return db.query(DatabaseMember).filter_by(database_id=virtual_db.id).all()

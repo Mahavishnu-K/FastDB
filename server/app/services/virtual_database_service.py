@@ -84,3 +84,23 @@ def get_all_dbs_for_user(db: Session, *, owner: User) -> List[VirtualDatabase]:
     # Combine, remove duplicates, and return
     all_dbs = owned_dbs.union(member_dbs).all()
     return all_dbs
+
+def get_collaborated_dbs_for_user(db: Session, *, user: User) -> List[VirtualDatabase]:
+    """
+    Returns a list of all virtual databases that the given user is a collaborator on
+    (i.e., they are a member but not the direct owner).
+    """
+    return db.query(VirtualDatabase).join(DatabaseMember).filter(
+        DatabaseMember.user_id == user.user_id,
+        VirtualDatabase.user_id != user.user_id 
+    ).all()
+
+def get_owned_and_shared_dbs(db: Session, *, owner: User) -> List[VirtualDatabase]:
+    """
+    Returns a list of all virtual databases that the given user owns
+    AND has shared with at least one other collaborator.
+    """
+    return db.query(VirtualDatabase).join(DatabaseMember).filter(
+        # Condition 1: The user must be the owner of the database
+        VirtualDatabase.user_id == owner.user_id
+    ).distinct().all()

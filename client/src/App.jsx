@@ -23,6 +23,7 @@ const API = lazy(() => import('./pages/API'));
 const TableEditor = lazy(() => import('./pages/TableEditor'));
 const EditTable = lazy(() => import('./pages/EditTable'));
 const LoginPage = lazy(() => import('./pages/login'));
+const CollaborationPage = lazy(() => import('./pages/Collaboration'));
 
 function DashboardLayout() {
   const navigate = useNavigate();
@@ -95,6 +96,7 @@ function DashboardLayout() {
                   <Route path="/query" element={<Query key={selectedDb} />} />
                   <Route path="/schema" element={<Schema onTableDelete={handleTableDelete} />} />
                   <Route path="/api" element={<API />} />
+                  <Route path="/collaboration" element={<CollaborationPage />} />
                   <Route path="/table/new" element={<TableEditor onSaveSuccess={handleSaveSuccess} onCancel={() => navigate('/schema')} />} />
                   <Route path="/table/edit/:tableName" element={<EditTable onSaveSuccess={handleSaveSuccess} onCancel={() => navigate('/schema')} />} />
                   <Route path="*" element={<Navigate to="/query" replace />} />

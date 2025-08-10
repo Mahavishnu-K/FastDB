@@ -23,6 +23,7 @@ const Header = ({ onSidebarToggle }) => {
   const tabs = [
     { id: 'query', label: 'Query', path: '/query' },
     { id: 'schema', label: 'Schema', path: '/schema' },
+    { id: 'collab', label: 'Collaboration', path: '/collaboration' },
   ];
 
   const handleTabClick = (path) => navigate(path);
