@@ -27,7 +27,7 @@ def create_user_database(
     """
     Create a new virtual database for the authenticated user.
     """
-    existing_db = vdb_service.get_db_by_virtual_name(db, owner=current_user, virtual_name=db_in.virtual_name)
+    existing_db = vdb_service.get_accessible_database(db, user=current_user, virtual_name=db_in.virtual_name)
     if existing_db:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

@@ -116,7 +116,7 @@ async def run_nlp_command(
         sql_to_execute = final_prompt
     else:
         # For NLP, we need to connect to the target DB to get its schema for context
-        virtual_db = vdb_service.get_db_by_virtual_name(db_session, owner=current_user, virtual_name=x_target_database)
+        virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
         if not virtual_db and x_target_database != "postgres": # Allow NLP context from postgres db
              raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
         
@@ -141,7 +141,7 @@ async def run_nlp_command(
             print("INFO: CREATE DATABASE command detected. Using superuser engine.")
             new_virtual_name = sql_to_execute.split()[2].strip(';"')
             
-            if vdb_service.get_db_by_virtual_name(db_session, owner=current_user, virtual_name=new_virtual_name):
+            if vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=new_virtual_name):
                 raise HTTPException(status_code=409, detail=f"You already have a database named '{new_virtual_name}'.")
 
             # 2. Create a validated Pydantic model instance.
@@ -161,7 +161,7 @@ async def run_nlp_command(
             virtual_name_to_drop = sql_to_execute.split()[2].strip(';"')
             
             # Look up the physical name to drop it
-            db_to_drop = vdb_service.get_db_by_virtual_name(db_session, owner=current_user, virtual_name=virtual_name_to_drop)
+            db_to_drop = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=virtual_name_to_drop)
             if not db_to_drop:
                 raise HTTPException(status_code=404, detail=f"Database '{virtual_name_to_drop}' not found for your account.")
             
@@ -172,7 +172,7 @@ async def run_nlp_command(
         else:
             # --- STANDARD LOGIC FOR ALL OTHER QUERIES (SELECT, INSERT, etc.) ---
             # Look up the physical DB name for the target of the query
-            virtual_db = vdb_service.get_db_by_virtual_name(db_session, owner=current_user, virtual_name=x_target_database)
+            virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
             if not virtual_db:
                 raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found for your account.")
             
@@ -241,9 +241,9 @@ async def process_nl_query(
     without executing it. This is a secure, multi-tenant version.
     """
     # 1. Look up the user's virtual database to find the physical name.
-    virtual_db = vdb_service.get_db_by_virtual_name(
+    virtual_db = vdb_service.get_accessible_database(
         db_session, 
-        owner=current_user, 
+        user=current_user, 
         virtual_name=x_target_database
     )
     if not virtual_db:
