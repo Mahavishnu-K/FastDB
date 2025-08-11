@@ -75,7 +75,7 @@ async def execute_structured_query(
     """
     Securely executes a structured query from the fluent builder.
     """
-    virtual_db = vdb_service.get_db_by_virtual_name(db_session, owner=current_user, virtual_name=x_target_database)
+    virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
     if not virtual_db:
         raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
     
@@ -115,7 +115,7 @@ async def insert_data_into_table(
     if not request.data:
         return QueryResponse(success=True, message="No data provided to insert.", result={"rows_affected": 0})
 
-    virtual_db = vdb_service.get_db_by_virtual_name(db_session, owner=current_user, virtual_name=x_target_database)
+    virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
     if not virtual_db:
         raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
     
@@ -157,7 +157,7 @@ async def get_table_data(
     if not table_name.isidentifier():
         raise HTTPException(status_code=400, detail="Invalid table name.")
 
-    virtual_db = vdb_service.get_db_by_virtual_name(db_session, owner=current_user, virtual_name=x_target_database)
+    virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
     if not virtual_db:
         raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
     
@@ -188,7 +188,7 @@ async def update_data(
     current_user: User = Depends(get_current_user)
 ):
     """Securely updates data in a table based on conditions."""
-    virtual_db = vdb_service.get_db_by_virtual_name(db_session, owner=current_user, virtual_name=x_target_database)
+    virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
     if not virtual_db:
         raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
     
@@ -215,7 +215,7 @@ async def delete_data(
     current_user: User = Depends(get_current_user)
 ):
     """Securely deletes data from a table based on conditions."""
-    virtual_db = vdb_service.get_db_by_virtual_name(db_session, owner=current_user, virtual_name=x_target_database)
+    virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
     if not virtual_db:
         raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
     

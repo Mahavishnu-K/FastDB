@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Check, Copy, LucideNotebookText, Menu, Square, User } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useUser } from '../contexts/UserContext';
 
 /**
  * Renders the main application header with navigation, a theme switcher, and a user profile menu.
@@ -17,18 +18,13 @@ const Header = ({ onSidebarToggle, onScratchpadToggle }) => {
   const [copied, setCopied] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
 
-
-  // Mock user data. In a real application, this would come from a context or a user state.
-  const user = {
-    name: 'Alex Johnson',
-    email: 'alex.j@example.com',
-    apiKey: 'ak_live_********************1234'
-  };
+  const { user, isLoading: isUserLoading } = useUser();
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', path: '/dashboard' },
     { id: 'query', label: 'Query', path: '/query' },
     { id: 'schema', label: 'Schema', path: '/schema' },
+    { id: 'collaboration', label: 'Collaboration', path: '/collaboration' },
   ];
 
   const handleTabClick = (path) => navigate(path);
@@ -41,11 +37,14 @@ const Header = ({ onSidebarToggle, onScratchpadToggle }) => {
   };
 
   const handleCopyApiKey = () => {
-    navigator.clipboard.writeText(user.apiKey);
-    setCopied(true);
-    setCopiedText(true);
-    setTimeout(() => setCopied(false), 2000);
-    setTimeout(() => setCopiedText(false), 1500);
+    // --- THE FIX: Use the api_key from the user object ---
+    if (user?.api_key) {
+      navigator.clipboard.writeText(user.api_key);
+      setCopied(true);
+      setCopiedText(true);
+      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopiedText(false), 1500);
+    }
   };
 
   // Effect to handle closing the profile menu when clicking outside
@@ -115,20 +114,29 @@ const Header = ({ onSidebarToggle, onScratchpadToggle }) => {
                 ref={profileMenuRef}
                 className="absolute top-full right-0 mt-2 w-64 bg-fg-light dark:bg-fg-dark border border-border-light dark:border-border-dark rounded-md p-3 z-20 shadow-lg"
               >
-                <div className="border-b border-border-light dark:border-border-dark pb-2 mb-2">
-                  <p className="font-semibold text-sm">{user.name}</p>
-                  <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{user.email}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">API Key</label>
-                  <div className="flex items-center space-x-2 mt-1 p-2 bg-bg-light dark:bg-bg-dark border border-border-light dark:border-border-dark rounded-md">
-                    <code className="text-xs font-mono text-text-light dark:text-text-dark truncate flex-1">{user.apiKey}</code>
-                    <button onClick={handleCopyApiKey} title="Copy API Key" className="relative">
-                      {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-text-muted-light dark:text-text-muted-dark" />}
-                      {copiedText && <motion.span initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0}} className="absolute -top-6 -left-4 text-xs bg-slate-800 text-white px-2 py-0.5 rounded-md">Copied!</motion.span>}
-                    </button>
-                  </div>
-                </div>
+                {isUserLoading ? (
+                  <p className="text-xs text-text-muted-light dark:text-text-muted-dark">Loading...</p>
+                ) : user ? (
+                  <>
+                    <div className="border-b border-border-light dark:border-border-dark pb-2 mb-2">
+                      <p className="font-semibold text-sm">{user.name}</p>
+                      <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{user.email}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark">API Key</label>
+                      <div className="flex items-center space-x-2 mt-1 p-2 bg-bg-light dark:bg-bg-dark border border-border-light dark:border-border-dark rounded-md">
+                        {/* --- THE FIX: Display the api_key from the user object --- */}
+                        <code className="text-xs font-mono text-text-light dark:text-text-dark truncate flex-1">{user.api_key}</code>
+                        <button onClick={handleCopyApiKey} title="Copy API Key" className="relative">
+                          {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-text-muted-light dark:text-text-muted-dark" />}
+                          {copiedText && <motion.span initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0}} className="absolute -top-6 -left-4 text-xs bg-slate-800 text-white px-2 py-0.5 rounded-md">Copied!</motion.span>}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-xs text-red-500">Could not load user data.</p>
+                )}
               </motion.div>
             )}
           </div>

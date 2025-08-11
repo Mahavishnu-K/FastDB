@@ -64,6 +64,10 @@ export const signupUser = async (name, email, password) => {
     return response.data;
 };
 
+export const getMyProfile = async () => {
+  const response = await apiClient.get('/users/me');
+  return response.data;
+};
 
 // ---- Database & Schema ----
 
@@ -173,22 +177,71 @@ export const saveQuery = async (name, query) => {
     return response.data;
 }
 
+// === NEW COLLABORATION ENDPOINTS ===
+
 /**
- * Deletes a saved query.
- * @param {string} queryId - The ID of the query to delete.
- * @returns {Promise<object>}
+ * Fetches databases that the current user owns AND has shared with others.
+ * @returns {Promise<Array<object>>} A list of the user's shared database objects.
  */
-export const deleteSavedQuery = async (queryId) => {
-    // MOCK: This would call a real backend endpoint `DELETE /history/saved-queries/{queryId}`
-    await new Promise(res => setTimeout(res, 300));
-    console.log(`Mock deleted query with ID: ${queryId}`);
-    // Simulate success
-    if (queryId) {c
-        return { success: true, message: "Query deleted" };
-    } else {
-        throw new Error("Invalid query ID for deletion.");
-    }
+export const listDbsSharedByMe = async () => {
+  const response = await apiClient.get('/databases/shared-by-me');
+  return response.data;
 };
+
+/**
+ * Fetches databases that have been shared WITH the current user.
+ * @returns {Promise<Array<object>>} A list of collaborated database objects.
+ */
+export const listDbsSharedWithMe = async () => {
+  const response = await apiClient.get('/databases/collaborations');
+  return response.data;
+};
+
+/**
+ * Fetches the list of all members (owner + collaborators) for a specific database.
+ * @param {string} dbName The virtual name of the database.
+ * @returns {Promise<Array<object>>} A list of member objects, each with user_id, name, email, and role.
+ */
+export const getDatabaseMembers = async (dbName) => {
+  const response = await apiClient.get(`/databases/${dbName}/members`);
+  return response.data;
+};
+
+/**
+ * Invites a new user to collaborate on a database.
+ * @param {string} dbName The virtual name of the database.
+ * @param {string} email The email of the user to invite.
+ * @param {string} role The role to assign (e.g., 'editor', 'viewer').
+ * @returns {Promise<object>} The new member object.
+ */
+export const inviteUserToDb = async (dbName, email, role) => {
+  const response = await apiClient.post(`/databases/${dbName}/members`, { email, role });
+  return response.data;
+};
+
+/**
+ * Updates the role of an existing collaborator.
+ * @param {string} dbName The virtual name of the database.
+ * @param {string} memberUserId The user ID of the member to update.
+ * @param {string} role The new role to assign.
+ * @returns {Promise<object>} The updated member object.
+ */
+export const updateMemberRole = async (dbName, memberUserId, role) => {
+  const response = await apiClient.put(`/databases/${dbName}/members/${memberUserId}`, { role });
+  return response.data;
+};
+
+/**
+ * Removes a collaborator from a database (revokes access).
+ * @param {string} dbName The virtual name of the database.
+ * @param {string} memberUserId The user ID of the member to remove.
+ * @returns {Promise<void>}
+ */
+export const removeMemberFromDb = async (dbName, memberUserId) => {
+  // A DELETE request with a 204 response doesn't typically have a body to return.
+  await apiClient.delete(`/databases/${dbName}/members/${memberUserId}`);
+};
+
 
 /**
  * Fetches a query performance analysis (EXPLAIN).

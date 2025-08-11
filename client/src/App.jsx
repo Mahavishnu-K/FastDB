@@ -5,7 +5,7 @@ import { Navigate, Route, BrowserRouter as Router, Routes, useNavigate } from 'r
 import { CommandPalette, CommandPaletteProvider, useCommandPalette } from './components/command/CommandPalette';
 import Header from './components/Header';
 import ProtectedRoute from './components/protectedRoute';
-import Scratchpad from './components/ScratchPad'; // Import Scratchpad
+import Scratchpad from './components/ScratchPad';
 import Sidebar from './components/Sidebar';
 import WelcomeModal from './components/WelcomeModal';
 import { ConfirmationProvider } from './contexts/ConfirmationContext';
@@ -16,10 +16,9 @@ import { UserProvider, useUser } from './contexts/UserContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAppStore } from './store/useAppStore';
 
-
 // API Services
+import CollaborationPage from './pages/Collaboration';
 import * as api from './services/apiServices';
-import { initializeApiClient } from './services/apiServices';
 
 // --- Lazy-loaded Page Components ---
 const Query = lazy(() => import('./pages/Query'));
@@ -28,27 +27,31 @@ const API = lazy(() => import('./pages/API'));
 const TableEditor = lazy(() => import('./pages/TableEditor'));
 const EditTable = lazy(() => import('./pages/EditTable'));
 const LoginPage = lazy(() => import('./pages/login'));
-const Dashboard = lazy(() => import('./pages/Dashboard')); // New
-const SavedQueries = lazy(() => import('./pages/SavedQueries')); // New
-const SchemaBuilder = lazy(() => import('./pages/SchemaBuilder')); // New
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const SavedQueries = lazy(() => import('./pages/SavedQueries'));
+const SchemaBuilder = lazy(() => import('./pages/SchemaBuilder'));
 
 const queryClient = new QueryClient();
 
 function DashboardLayout() {
   const navigate = useNavigate();
   const { setActions } = useCommandPalette();
-  const { logout } = useUser();
+  const { user, logout, isLoading: isUserLoading } = useUser(); // --- Get user and loading state
   const [isScratchpadVisible, setIsScratchpadVisible] = useState(false);
-
 
   const { 
     initialize, fetchSchemaAndDiagram, handleDbChange, toggleSidebar,
     databases, selectedDb, schema, appIsLoading, error, isSidebarOpen 
   } = useAppStore();
 
+  // --- THE FIX: Make app initialization dependent on the user being loaded ---
   useEffect(() => {
-    initialize();
-  }, [initialize]);
+    // Only initialize the app store's data (like databases) AFTER the user is confirmed to be loaded.
+    if (!isUserLoading && user) {
+      initialize();
+    }
+  }, [isUserLoading, user, initialize]);
+
 
   useEffect(() => {
     const actions = [
@@ -91,6 +94,11 @@ function DashboardLayout() {
       navigate('/schema');
   };
 
+  // --- Display a loading indicator for the entire layout while the user is being authenticated ---
+  if (isUserLoading) {
+      return <div className="flex items-center justify-center h-screen bg-bg-light dark:bg-bg-dark">Authenticating...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-bg-light dark:bg-bg-dark">
       <WelcomeModal />
@@ -114,6 +122,7 @@ function DashboardLayout() {
                   <Route path="/schema" element={<Schema onTableDelete={handleTableDelete} />} />
                   <Route path="/schema/builder" element={<SchemaBuilder />} />
                   <Route path="/saved-queries" element={<SavedQueries />} />
+                  <Route path="/collaboration" element={<CollaborationPage />} />
                   {/* <Route path="/api" element={<API />} /> */}
                   <Route path="/table/new" element={<TableEditor onSaveSuccess={handleSaveSuccess} onCancel={() => navigate('/schema')} />} />
                   <Route path="/table/edit/:tableName" element={<EditTable onSaveSuccess={handleSaveSuccess} onCancel={() => navigate('/schema')} />} />
@@ -128,12 +137,7 @@ function DashboardLayout() {
 }
 
 export default function App() {
-    const [isInitialized, setIsInitialized] = useState(false);
-
     useEffect(() => {
-        const token = localStorage.getItem('accessToken');
-        if (token) initializeApiClient(token);
-        setIsInitialized(true);
         if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         } else {
@@ -155,8 +159,6 @@ export default function App() {
         }, [commandPalette]);
         return null;
     }
-
-    if (!isInitialized) return <div className="flex items-center justify-center h-screen bg-bg-light dark:bg-bg-dark">Loading...</div>;
 
     return (
         <Router>

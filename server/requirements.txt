@@ -11,3 +11,4 @@ passlib[bcrypt]
 python-jose[cryptography]
 alembic
 waitress
+email-validator

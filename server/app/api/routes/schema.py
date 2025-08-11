@@ -26,7 +26,7 @@ async def get_database_schema(
     current_user: User = Depends(get_current_user)
 ):
     """Securely returns the full schema for the user's target database."""
-    virtual_db = vdb_service.get_db_by_virtual_name(db_session, owner=current_user, virtual_name=x_target_database)
+    virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
     if not virtual_db:
         raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found for your account.")
     
@@ -60,7 +60,7 @@ async def export_schema_as_sql(
     current_user: User = Depends(get_current_user)
 ):
     """Securely generates a full SQL script for the user's target database."""
-    virtual_db = vdb_service.get_db_by_virtual_name(db_session, owner=current_user, virtual_name=x_target_database)
+    virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
     if not virtual_db:
         raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
     
@@ -84,7 +84,7 @@ async def get_schema_as_mermaid(
     current_user: User = Depends(get_current_user)
 ):
     """Securely generates a Mermaid.js diagram for the user's target database."""
-    virtual_db = vdb_service.get_db_by_virtual_name(db_session, owner=current_user, virtual_name=x_target_database)
+    virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
     if not virtual_db:
         raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
     
@@ -103,7 +103,7 @@ async def get_single_table_schema(
     current_user: User = Depends(get_current_user)
 ):
     """Securely retrieves the detailed schema for a single table."""
-    virtual_db = vdb_service.get_db_by_virtual_name(db_session, owner=current_user, virtual_name=x_target_database)
+    virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
     if not virtual_db:
         raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found for your account.")
     
@@ -139,7 +139,7 @@ async def delete_table(
     if not table_name.isidentifier():
         raise HTTPException(status_code=400, detail="Invalid table name.")
 
-    virtual_db = vdb_service.get_db_by_virtual_name(db_session, owner=current_user, virtual_name=x_target_database)
+    virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
     if not virtual_db:
         raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
     

@@ -1,6 +1,6 @@
 # server/app/services/virtual_database_service.py
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, or_
 from typing import List
 
 from app.models.virtual_database_model import VirtualDatabase
@@ -8,12 +8,24 @@ from app.models.user_model import User
 from app.schemas.virtual_database_schema import VirtualDatabaseCreate
 from app.db.session import get_superuser_engine
 from app.utils.gen_physical_name import generate_physical_name
+from app.models.database_collab_model import DatabaseMember
 
-def get_db_by_virtual_name(db: Session, *, owner: User, virtual_name: str) -> VirtualDatabase | None:
-    """Checks if a user already has a database with a given virtual name."""
+def get_accessible_database(db: Session, *, user: User, virtual_name: str) -> VirtualDatabase | None:
+    """
+    Finds a virtual database by name that a user has access to,
+    either as the direct owner or as a collaborator.
+    """
     return db.query(VirtualDatabase).filter(
-        VirtualDatabase.user_id == owner.user_id,
-        VirtualDatabase.virtual_name == virtual_name
+        VirtualDatabase.virtual_name == virtual_name,
+        or_(
+            # Condition 1: The user is the direct owner of the database.
+            VirtualDatabase.user_id == user.user_id,
+            
+            # Condition 2: The user is listed as a member in the collaboration table.
+            VirtualDatabase.id.in_(
+                db.query(DatabaseMember.database_id).filter(DatabaseMember.user_id == user.user_id)
+            )
+        )
     ).first()
 
 def create_virtual_database(db: Session, *, owner: User, db_in: VirtualDatabaseCreate) -> VirtualDatabase:
@@ -64,4 +76,31 @@ def delete_virtual_database(db: Session, *, db_to_drop: VirtualDatabase):
     return
 
 def get_all_dbs_for_user(db: Session, *, owner: User) -> List[VirtualDatabase]:
-    return db.query(VirtualDatabase).filter(VirtualDatabase.user_id == owner.user_id).all()
+    owned_dbs = db.query(VirtualDatabase).filter(VirtualDatabase.user_id == owner.user_id)
+    
+    # Query for DBs the user is a member of
+    member_dbs = db.query(VirtualDatabase).join(DatabaseMember).filter(DatabaseMember.user_id == owner.user_id)
+    
+    # Combine, remove duplicates, and return
+    all_dbs = owned_dbs.union(member_dbs).all()
+    return all_dbs
+
+def get_collaborated_dbs_for_user(db: Session, *, user: User) -> List[VirtualDatabase]:
+    """
+    Returns a list of all virtual databases that the given user is a collaborator on
+    (i.e., they are a member but not the direct owner).
+    """
+    return db.query(VirtualDatabase).join(DatabaseMember).filter(
+        DatabaseMember.user_id == user.user_id,
+        VirtualDatabase.user_id != user.user_id 
+    ).all()
+
+def get_owned_and_shared_dbs(db: Session, *, owner: User) -> List[VirtualDatabase]:
+    """
+    Returns a list of all virtual databases that the given user owns
+    AND has shared with at least one other collaborator.
+    """
+    return db.query(VirtualDatabase).join(DatabaseMember).filter(
+        # Condition 1: The user must be the owner of the database
+        VirtualDatabase.user_id == owner.user_id
+    ).distinct().all()

@@ -18,7 +18,7 @@ def begin_new_transaction(
     current_user: User = Depends(get_current_user)
 ):
     """Securely starts a new transaction and returns its unique ID."""
-    virtual_db = vdb_service.get_db_by_virtual_name(db_session, owner=current_user, virtual_name=x_target_database)
+    virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
     if not virtual_db:
         raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
     

@@ -140,9 +140,9 @@ const Dashboard = () => {
     };
 
     const quickActions = [
-        { label: "New Query", icon: <FilePlus className="w-5 h-5 text-blue-500"/>, onClick: () => navigate('/query') },
-        { label: "New Table", icon: <Database className="w-5 h-5 text-blue-500"/>, onClick: () => navigate('/table/new') },
-        { label: "Refresh Schema", icon: <History className="w-5 h-5 text-blue-500"/>, onClick: () => fetchSchemaAndDiagram(selectedDb) },
+        { label: "New Query", icon: <FilePlus className="w-4 h-4 text-blue-500"/>, onClick: () => navigate('/query') },
+        { label: "New Table", icon: <Database className="w-4 h-4 text-blue-500"/>, onClick: () => navigate('/table/new') },
+        { label: "Refresh Schema", icon: <History className="w-4 h-4 text-blue-500"/>, onClick: () => fetchSchemaAndDiagram(selectedDb) },
     ];
 
     return (

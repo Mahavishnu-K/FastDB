@@ -8,7 +8,6 @@ from app.models.user_model import User
 from app.core.security import get_current_user
 from app.schemas.virtual_database_schema import VirtualDatabaseCreate, VirtualDatabaseRead
 from app.services import virtual_database_service as vdb_service
-from app.services.virtual_database_service import get_all_dbs_for_user
 
 router = APIRouter()
 
@@ -27,7 +26,7 @@ def create_user_database(
     """
     Create a new virtual database for the authenticated user.
     """
-    existing_db = vdb_service.get_db_by_virtual_name(db, owner=current_user, virtual_name=db_in.virtual_name)
+    existing_db = vdb_service.get_accessible_database(db, user=current_user, virtual_name=db_in.virtual_name)
     if existing_db:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -47,4 +46,26 @@ def list_user_databases(
     current_user: User = Depends(get_current_user)
 ):
     """Lists all virtual databases owned by the current user."""
-    return get_all_dbs_for_user(db, owner=current_user)
+    return vdb_service.get_all_dbs_for_user(db, owner=current_user)
+
+@router.get("/collaborations", response_model=List[VirtualDatabaseRead], tags=["Database Management"])
+def list_collaborated_databases(
+    db: Session = Depends(get_db_session),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Lists only the databases that the current user has been invited to
+    as a collaborator.
+    """
+    return vdb_service.get_collaborated_dbs_for_user(db, user=current_user)
+
+@router.get("/shared-by-me", response_model=List[VirtualDatabaseRead], tags=["Database Management"])
+def list_databases_shared_by_me(
+    db: Session = Depends(get_db_session),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Lists only the databases that the current user owns AND has shared
+    with other collaborators.
+    """
+    return vdb_service.get_owned_and_shared_dbs(db, owner=current_user)
