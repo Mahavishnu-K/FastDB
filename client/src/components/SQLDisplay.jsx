@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Code, Copy, Check, Play, BrainCircuit, Save } from 'lucide-react';
+import { BrainCircuit, Check, Code, Copy, Play, Save } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import * as api from '../services/apiServices';
 
@@ -101,7 +101,7 @@ const SQLDisplay = ({ sql, setSql, onExecuteSql, selectedDb, onSaveQuery }) => {
               <p><strong>Execution Time:</strong> {explainResult.execution_time?.toFixed(4)} ms</p>
               <p><strong>Planning Time:</strong> {explainResult.planning_time?.toFixed(4)} ms</p>
               <p><strong>Total Cost:</strong> {explainResult.total_cost?.toFixed(2)}</p>
-              {explainResult.has_seq_scan && <p className="text-yellow-400 font-bold">Warning: Query contains a Sequential Scan, which may be inefficient on large tables.</p>}
+              {explainResult.has_seq_scan && <p className="text-yellow-400 font-medium">Warning: Query contains a Sequential Scan, which may be inefficient on large tables.</p>}
             </div>
           )}
         </div>

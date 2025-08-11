@@ -1,10 +1,13 @@
-import { Plus, Save, Trash2, AlertTriangle, Key } from 'lucide-react';
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import * as api from '../services/apiServices';
-import { useAppStore } from '../store/useAppStore';
+import { AlertTriangle, Key, Plus, Save, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useConfirm } from '../contexts/ConfirmationContext';
+import { usePrompt } from '../contexts/InputContext';
+import * as api from '../services/apiServices';
+import { generateMockSql } from '../services/mockDataGenerator';
+import { useAppStore } from '../store/useAppStore';
+
 
 const WarningBox = ({ children }) => (
     <div className="border text-xs p-3 rounded-lg my-4 
@@ -24,6 +27,9 @@ const EditTable = ({ onSaveSuccess, onCancel }) => {
     const { schema, selectedDb } = useAppStore();
     const tables = schema.tables;
     const confirm = useConfirm();
+    const prompt = usePrompt();
+    const [mockSql, setMockSql] = useState('');
+    const [isMockModalOpen, setIsMockModalOpen] = useState(false);
 
     const [tableName, setTableName] = useState(initialTableName);
     const [columns, setColumns] = useState([]);
@@ -129,12 +135,38 @@ const EditTable = ({ onSaveSuccess, onCancel }) => {
             setIsSaving(false);
         }
     };
+    const handleGenerateMockData = async () => {
+        const rowCountStr = await prompt({
+            title: "Generate Mock Data",
+            message: "How many rows of mock data do you want to generate?",
+            initialValue: "10",
+            confirmText: "Generate"
+        });
+        const rowCount = parseInt(rowCountStr, 10);
+        if (rowCount > 0) {
+            const sql = generateMockSql(tableName, columns, rowCount);
+            setMockSql(sql);
+            setIsMockModalOpen(true);
+        }
+    };
+    
+    const MockDataModal = () => (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center" onClick={() => setIsMockModalOpen(false)}>
+            <div className="bg-fg-light dark:bg-fg-dark rounded-lg w-full max-w-2xl p-4 flex flex-col h-2/3" onClick={e => e.stopPropagation()}>
+                <h3 className="font-semibold mb-2">Generated Mock Data SQL</h3>
+                <p className="text-xs text-text-muted-light dark:text-text-muted-dark mb-2">Copy this SQL and run it on the Query page.</p>
+                <textarea readOnly value={mockSql} className="flex-1 w-full bg-bg-light dark:bg-bg-dark font-mono text-xs p-2 border rounded-md"></textarea>
+                <button onClick={() => setIsMockModalOpen(false)} className="mt-2 bg-blue-600 text-white py-2 rounded-md">Close</button>
+            </div>
+        </div>
+    );
 
     return (
         <div className="space-y-4">
+            {isMockModalOpen && <MockDataModal />}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-xl font-bold">Edit Table: <span className="text-blue-500">{initialTableName}</span></h2>
+                    <h2 className="text-xl font-medium">Edit Table: <span className="text-blue-500">{initialTableName}</span></h2>
                     <p className="text-sm text-text-muted-light dark:text-text-muted-dark">Modify the table structure. Changes can be destructive.</p>
                 </div>
                 <div className="flex space-x-2">
