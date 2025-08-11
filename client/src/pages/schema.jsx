@@ -115,7 +115,7 @@ const SchemaDiffModal = ({ databases, selectedDb, onClose }) => {
     );
 };
 
-const SchemaPage = ({ onTableDelete }) => {
+const SchemaPage = () => {
   const { schema, selectedDb, fetchSchemaAndDiagram } = useAppStore();
   const [selectedTable, setSelectedTable] = useState(null);
   const [isDiffing, setIsDiffing] = useState(false);
@@ -162,10 +162,11 @@ const SchemaPage = ({ onTableDelete }) => {
 
     if (wasConfirmed) {
         try {
-            await onTableDelete(tableName);
+            await api.deleteTable(tableName, selectedDb);
             toast.success(`Table "${tableName}" deleted successfully.`);
             if(selectedTable?.name === tableName) setSelectedTable(null);
             if(previewTableName === tableName) setPreviewData(null); // Close preview if table is deleted
+            fetchSchemaAndDiagram(selectedDb); 
         } catch (err) {
             toast.error(`Failed to delete table: ${err.message}`);
         }
@@ -289,10 +290,36 @@ const SchemaPage = ({ onTableDelete }) => {
                             </div>
                             <div className="flex items-center space-x-2">
                                 <button onClick={() => handleEditAnnotation(column.name)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1"><MessageSquare className="w-3.5 h-3.5 text-text-muted-light dark:text-text-muted-dark" /></button>
-                                {column.primary_key && <span className="text-2xs font-medium text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded-full">PK</span>}
-                                {!column.nullable && <span className="text-2xs font-semibold bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full">NOT NULL</span>}
+                                {column.is_primary_key && (
+                                    <span className="text-2xs font-semibold bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full">PRIMARY KEY</span>
+                                )}
+                                
+                                {/* Foreign Key - Uses `foreign_key` */}
+                                {column.foreign_key && (
+                                    <span className="text-2xs font-semibold bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full" title={column.foreign_key}>FK</span>
+                                )}
+
+                                {/* Unique Constraint - Uses `is_unique` */}
+                                {column.is_unique && !column.is_primary_key && (
+                                    <span className="text-2xs font-semibold bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full">UNIQUE</span>
+                                )}
+
+                                {/* Index - Uses `has_index` */}
+                                {column.has_index && !column.is_primary_key && (
+                                     <span className="text-2xs font-semibold bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full">INDEX</span>
+                                )}
+
+                                {/* Not Null - Uses `is_nullable` */}
+                                {!column.is_nullable && (
+                                    <span className="text-2xs font-semibold bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full">NOT NULL</span>
+                                )}
                             </div>
                         </div>
+                        {column.foreign_key && (
+                            <p className="text-xs text-sky-500 mt-2 pl-1 ml-px">
+                                References <span className="font-mono">{column.foreign_key}</span>
+                            </p>
+                        )}
                         {annotations[column.name] && (
                             <p className="text-xs text-text-muted-light dark:text-text-muted-dark mt-2 pl-1 border-l-2 border-blue-500/50 ml-px">
                                 {annotations[column.name]}

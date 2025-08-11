@@ -19,6 +19,46 @@ from app.core.diagram_generator import generate_schema_as_mermaid
 
 router = APIRouter()
 
+def _get_full_schema_details(inspector, engine):
+    """Helper function to avoid duplicating schema inspection logic."""
+    response_tables = []
+    table_names = inspector.get_table_names(schema="public")
+    
+    for table_name in table_names:
+        # --- THIS IS THE CORRECTED LOGIC ---
+        columns_data = inspector.get_columns(table_name, schema="public")
+        pk_constraint = inspector.get_pk_constraint(table_name, schema="public")
+        primary_key_columns = pk_constraint.get('constrained_columns', [])
+        foreign_keys = inspector.get_foreign_keys(table_name, schema="public")
+        indexes = inspector.get_indexes(table_name, schema="public")
+        unique_constraints = inspector.get_unique_constraints(table_name, schema="public")
+
+        column_schemas = []
+        for col in columns_data:
+            is_pk = col['name'] in primary_key_columns
+            
+            fk_info = next((fk for fk in foreign_keys if col['name'] in fk['constrained_columns']), None)
+            fk_display = f"{fk_info['referred_table']}({fk_info['referred_columns'][0]})" if fk_info else None
+            is_unique = any(col['name'] in u['column_names'] for u in unique_constraints)
+            has_index = any(col['name'] in i['column_names'] for i in indexes)
+
+            column_schemas.append(ColumnSchema(
+                name=col['name'],
+                type=str(col['type']),
+                is_nullable=col['nullable'],
+                is_primary_key=is_pk,
+                is_unique=is_unique or is_pk,
+                has_index=has_index or is_pk,
+                foreign_key=fk_display,
+                default=col.get('default')
+            ))
+        
+        with engine.connect() as conn:
+            row_count = conn.execute(text(f'SELECT COUNT(1) FROM public."{table_name}"')).scalar_one_or_none() or 0
+
+        response_tables.append(TableSchema(name=table_name, columns=column_schemas, row_count=row_count))
+    return response_tables
+
 @router.get("/", response_model=FullSchemaResponse, tags=["Schema"])
 async def get_database_schema(
     x_target_database: str = Header(..., alias="X-Target-Database"),
@@ -32,24 +72,10 @@ async def get_database_schema(
     
     engine = get_engine_for_user_db(virtual_db.physical_name)
     inspector = inspect(engine)
-    response_tables = []
 
     try:
-        table_names = inspector.get_table_names(schema="public")
-        for table_name in table_names:
-            pk_constraint = inspector.get_pk_constraint(table_name, schema="public")
-            primary_keys = pk_constraint.get('constrained_columns', [])
-            columns = [
-                ColumnSchema(
-                    name=col['name'], type=str(col['type']),
-                    is_nullable=col['nullable'], is_primary_key=col['name'] in primary_keys,
-                    default=col['default']
-                ) for col in inspector.get_columns(table_name, schema="public")
-            ]
-            with engine.connect() as conn:
-                row_count = conn.execute(text(f'SELECT COUNT(1) FROM public."{table_name}"')).scalar_one()
-            response_tables.append(TableSchema(name=table_name, columns=columns, row_count=row_count))
-        return FullSchemaResponse(tables=response_tables)
+        tables = _get_full_schema_details(inspector, engine)
+        return FullSchemaResponse(tables=tables)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve schema: {str(e)}")
 
@@ -113,19 +139,15 @@ async def get_single_table_schema(
     if not inspector.has_table(table_name):
         raise HTTPException(status_code=404, detail=f"Table '{table_name}' not found in database '{x_target_database}'.")
 
-    pk_constraint = inspector.get_pk_constraint(table_name, schema="public")
-    primary_keys = pk_constraint.get('constrained_columns', [])
-    columns = [
-        ColumnSchema(
-            name=col['name'], type=str(col['type']),
-            is_nullable=col['nullable'], is_primary_key=col['name'] in primary_keys,
-            default=col['default']
-        ) for col in inspector.get_columns(table_name, schema="public")
-    ]
-    with engine.connect() as conn:
-        row_count = conn.execute(text(f'SELECT COUNT(1) FROM public."{table_name}"')).scalar_one_or_none() or 0
-
-    return TableSchema(name=table_name, columns=columns, row_count=row_count)
+    try:
+        # We can reuse the helper and just find the table we need
+        all_tables = _get_full_schema_details(inspector, engine)
+        target_table = next((t for t in all_tables if t.name == table_name), None)
+        if not target_table:
+             raise HTTPException(status_code=404, detail=f"Table '{table_name}' could not be processed.")
+        return target_table
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve schema for table '{table_name}': {str(e)}")
 
 
 @router.delete("/table/{table_name}", response_model=StatusResponse, tags=["Schema"])

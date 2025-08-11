@@ -74,7 +74,7 @@ const SchemaInsightsWidget = () => {
         if (!schema || !schema.tables) return [];
 
         schema.tables.forEach(table => {
-            if (!table.columns.some(col => col.primary_key)) {
+             if (!table.columns.some(col => col.is_primary_key)) {
                 result.push({ id: `no-pk-${table.name}`, icon: <ShieldAlert className="w-4 h-4 text-blue-500"/>, text: 'No primary key defined', table: table.name });
             }
             if (table.columns.length > 20) {

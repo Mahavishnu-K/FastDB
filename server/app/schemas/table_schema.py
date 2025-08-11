@@ -33,6 +33,9 @@ class ColumnSchema(BaseModel):
     type: str
     is_nullable: bool
     is_primary_key: bool
+    is_unique: bool 
+    has_index: bool 
+    foreign_key: Optional[str] = None
     default: Optional[Any] = None
 
 class TableSchema(BaseModel):

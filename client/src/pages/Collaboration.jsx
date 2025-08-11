@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Users, Share2, GitMerge, UserPlus, Trash2, Shield, Eye, Edit3, Mail, Send, X, Loader, Database, Crown, ChevronRight, Settings2 } from 'lucide-react';
-import * as api from '../services/apiServices';
-import { useUser } from '../contexts/UserContext';
+import { ChevronRight, Crown, Database, Edit3, Eye, GitMerge, Loader, Mail, Send, Settings2, Share2, Trash2, UserPlus, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppStore } from '../store/useAppStore';
 import { useConfirm } from '../contexts/ConfirmationContext';
+import { useUser } from '../contexts/UserContext';
+import * as api from '../services/apiServices';
+import { useAppStore } from '../store/useAppStore';
 
 // ===================================================================
-// === Sub-Component 1: The Invite Modal (Updated to match Dashboard style) ===
+// === Sub-Component 1: The Invite Modal (No changes) ===
 // ===================================================================
 const InviteMemberModal = ({ dbName, onClose, onInviteSuccess }) => {
   const [email, setEmail] = useState('');
@@ -91,7 +91,7 @@ const InviteMemberModal = ({ dbName, onClose, onInviteSuccess }) => {
 };
 
 // ===================================================================
-// === Sub-Component 2: Member Row Component ===
+// === Sub-Component 2: Member Row Component (No changes) ===
 // ===================================================================
 const MemberRow = ({ dbName, member, onUpdate, currentUserRole }) => {
   const [newRole, setNewRole] = useState(member.role);
@@ -134,7 +134,7 @@ const MemberRow = ({ dbName, member, onUpdate, currentUserRole }) => {
   const canEdit = currentUserRole === 'owner' || currentUserRole === 'editor';
 
   return (
-    <div className="bg-bg-light dark:bg-bg-dark rounded-md p-3 border border-border-light dark:border-border-dark hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+    <div className="bg-bg-light dark:bg-bg-dark rounded-md p-3 border border-border-light dark:border-border-dark hover:bg-slate-50 transition-colors">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {roleIcons[member.role]}
@@ -158,9 +158,9 @@ const MemberRow = ({ dbName, member, onUpdate, currentUserRole }) => {
                   </select>
                   <button 
                     onClick={handleRemove} 
-                    className="p-1.5 text-text-muted-light dark:text-text-muted-dark hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors"
+                    className="bg-fg-light dark:bg-fg-dark text-xs px-2 py-1 rounded border border-border-light dark:border-border-dark focus:ring-1 focus:ring-blue-500 focus:outline-none cursor-pointer"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    Revoke
                   </button>
                 </div>
               ) : (
@@ -181,7 +181,7 @@ const MemberRow = ({ dbName, member, onUpdate, currentUserRole }) => {
 };
 
 // ===================================================================
-// === Sub-Component 3: Shared Database Card ===
+// === Sub-Component 3: Shared Database Card (No changes) ===
 // ===================================================================
 const SharedDbCard = ({ database, currentUserRole }) => {
   const [members, setMembers] = useState([]);
@@ -203,8 +203,10 @@ const SharedDbCard = ({ database, currentUserRole }) => {
   }, [database.virtual_name, isManaging]);
 
   useEffect(() => {
-    fetchMembers();
-  }, [fetchMembers]);
+    if (isManaging) {
+        fetchMembers();
+    }
+  }, [isManaging, fetchMembers]);
 
   const handleToggleManage = () => {
     setIsManaging(prev => !prev);
@@ -278,8 +280,93 @@ const SharedDbCard = ({ database, currentUserRole }) => {
   );
 };
 
+
 // ===================================================================
-// === Sub-Component 4: Shared By Me Section ===
+// === NEW Sub-Component 4: My Databases Section ===
+// ===================================================================
+const MyDatabases = ({ onShareSuccess }) => {
+    const { user } = useUser();
+    const [myDbs, setMyDbs] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isInviting, setIsInviting] = useState(false);
+    const [selectedDb, setSelectedDb] = useState(null);
+
+    useEffect(() => {
+        const fetchDbs = async () => {
+            if (!user) return;
+            setIsLoading(true);
+            try {
+                const allDbs = await api.listDatabases();
+                setMyDbs(allDbs.filter(db => db.owner_id === user.id));
+            } catch (error) {
+                console.error("Failed to fetch user's databases", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchDbs();
+    }, [user]);
+
+    const handleShare = (db) => {
+        setSelectedDb(db);
+        setIsInviting(true);
+    };
+
+    const handleInviteSuccess = () => {
+        setIsInviting(false);
+        setSelectedDb(null);
+        if (onShareSuccess) {
+            onShareSuccess(); // This will refetch the "Shared By Me" list
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="text-center py-12">
+                <Loader className="w-8 h-8 animate-spin mx-auto text-blue-500" />
+            </div>
+        );
+    }
+
+    if (myDbs.length === 0) {
+        return (
+            <div className="text-center py-12">
+                <Database className="w-12 h-12 mx-auto text-text-muted-light dark:text-text-muted-dark mb-4" />
+                <p className="text-text-muted-light dark:text-text-muted-dark">No databases owned by you</p>
+                <p className="text-sm text-text-muted-light dark:text-text-muted-dark mt-1">
+                    Create a database to get started.
+                </p>
+            </div>
+        );
+    }
+    
+    return (
+        <div className="space-y-2">
+            {myDbs.map(db => (
+                <div key={db.id} className="bg-bg-light dark:bg-bg-dark border border-border-light dark:border-border-dark rounded-md p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Database className="w-5 h-5 text-text-muted-light dark:text-text-muted-dark"/>
+                        <span className="font-medium text-text-light dark:text-text-dark">{db.virtual_name}</span>
+                    </div>
+                    <button onClick={() => handleShare(db)} className="flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-600">
+                        <UserPlus className="w-4 h-4"/>
+                        <span>Invite</span>
+                    </button>
+                </div>
+            ))}
+            {isInviting && selectedDb && (
+                <InviteMemberModal
+                    dbName={selectedDb.virtual_name}
+                    onClose={() => setIsInviting(false)}
+                    onInviteSuccess={handleInviteSuccess}
+                />
+            )}
+        </div>
+    );
+};
+
+// ===================================================================
+// === Sub-Component 5: Shared By Me Section (No changes) ===
 // ===================================================================
 const SharedByMe = ({ databases }) => {
   const { user } = useUser();
@@ -290,7 +377,7 @@ const SharedByMe = ({ databases }) => {
         <Share2 className="w-12 h-12 mx-auto text-text-muted-light dark:text-text-muted-dark mb-4" />
         <p className="text-text-muted-light dark:text-text-muted-dark">No shared databases yet</p>
         <p className="text-sm text-text-muted-light dark:text-text-muted-dark mt-1">
-          Start collaborating by sharing your databases with team members.
+          Share one of your databases to start collaborating.
         </p>
       </div>
     );
@@ -310,7 +397,7 @@ const SharedByMe = ({ databases }) => {
 };
 
 // ===================================================================
-// === Sub-Component 5: Shared With Me Section ===
+// === Sub-Component 6: Shared With Me Section (No changes) ===
 // ===================================================================
 const SharedWithMe = ({ databases }) => {
   const navigate = useNavigate();
@@ -353,7 +440,7 @@ const SharedWithMe = ({ databases }) => {
 };
 
 // ===================================================================
-// === Main Page Component ===
+// === Main Page Component (Updated Layout) ===
 // ===================================================================
 const CollaborationPage = () => {
   const [sharedByMe, setSharedByMe] = useState([]);
@@ -411,8 +498,24 @@ const CollaborationPage = () => {
         </div>
       )}
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      {/* My Databases - Full Width at Top */}
+      <div className="bg-fg-light dark:bg-fg-dark border border-border-light dark:border-border-dark rounded-lg">
+        <div className="p-3 border-b border-border-light dark:border-border-dark">
+          <h2 className="font-medium text-text-light dark:text-text-dark flex items-center gap-2">
+            <Database className="w-4 h-4 text-blue-500" />
+            My Databases
+          </h2>
+          <p className="text-sm text-text-muted-light dark:text-text-muted-dark mt-1">
+            Databases that you own.
+          </p>
+        </div>
+        <div className="p-3">
+          <MyDatabases onShareSuccess={fetchData} />
+        </div>
+      </div>
+
+      {/* Bottom Row - Two Columns Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Databases I've Shared */}
         <div className="bg-fg-light dark:bg-fg-dark border border-border-light dark:border-border-dark rounded-lg">
           <div className="p-3 border-b border-border-light dark:border-border-dark">
@@ -421,7 +524,7 @@ const CollaborationPage = () => {
               Databases I've Shared
             </h2>
             <p className="text-sm text-text-muted-light dark:text-text-muted-dark mt-1">
-              Manage access to your databases
+              Manage access for your collaborators.
             </p>
           </div>
           <div className="p-3">
@@ -437,7 +540,7 @@ const CollaborationPage = () => {
               Shared With Me
             </h2>
             <p className="text-sm text-text-muted-light dark:text-text-muted-dark mt-1">
-              Access databases shared by others
+              Access databases from your team.
             </p>
           </div>
           <div className="p-3">

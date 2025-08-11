@@ -73,7 +73,7 @@ const ERDiagram = ({ mermaidString, onRefresh }) => {
       {isFullscreen && <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[-1]" onClick={() => setIsFullscreen(false)}></div>}
 
       <div className="flex items-center justify-between p-3 border-b border-border-light dark:border-border-dark">
-        <h4 className="text-sm font-semibold flex items-center space-x-2"><GitBranch className="w-4 h-4 text-blue-500" /><span>Entity Relationship Diagram</span></h4>
+        <h4 className="text-sm font-semibold flex items-center space-x-2"><GitBranch className="w-4 h-4 text-blue-500" /><span>Entity Relationship</span></h4>
         <div className="flex items-center space-x-1">
           <button onClick={onRefresh} className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800" title="Refresh Diagram"><RefreshCw className="w-4 h-4" /></button>
           <button onClick={() => setIsFullscreen(!isFullscreen)} className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800" title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}>{isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</button>

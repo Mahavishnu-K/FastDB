@@ -92,6 +92,13 @@ export const getDatabaseSchema = async (dbName) => {
   return response.data;
 };
 
+export const getIndividualTableSchema = async (tableName, dbName) => {
+  const response = await apiClient.get(`/schema/${tableName}`, {
+    headers: { 'X-Target-Database': dbName }
+  });
+  return response.data;
+};
+
 /**
  * Deletes a table from a specific database.
  * @param {string} tableName The name of the table to delete.

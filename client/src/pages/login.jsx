@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import { href, useNavigate } from 'react-router-dom';
 import * as api from '../services/apiServices';
 import { initializeApiClient } from '../services/apiServices';
 
@@ -40,7 +40,7 @@ const LoginPage = () => {
       initializeApiClient(data.access_token);
 
       toast.success('Login Successful!');
-      navigate('/query');
+      window.location.href = '/query';
     } catch (err) {
       localStorage.removeItem('accessToken');
       const errorMessage =

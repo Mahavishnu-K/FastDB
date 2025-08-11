@@ -84,10 +84,10 @@ function DashboardLayout() {
     navigate('/query', { state: { autoQuery: `select * from ${table.name}` } });
   };
   
-  const handleTableDelete = async (tableName) => {
-      await api.deleteTable(tableName, selectedDb);
-      fetchSchemaAndDiagram(selectedDb);
-  };
+  // const handleTableDelete = async (tableName) => {
+  //     await api.deleteTable(tableName, selectedDb);
+  //     fetchSchemaAndDiagram(selectedDb);
+  // };
   
   const handleSaveSuccess = () => {
       fetchSchemaAndDiagram(selectedDb);
@@ -119,7 +119,7 @@ function DashboardLayout() {
                 <Routes>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/query" element={<Query key={selectedDb} />} />
-                  <Route path="/schema" element={<Schema onTableDelete={handleTableDelete} />} />
+                  <Route path="/schema" element={<Schema />} />
                   <Route path="/schema/builder" element={<SchemaBuilder />} />
                   <Route path="/saved-queries" element={<SavedQueries />} />
                   <Route path="/collaboration" element={<CollaborationPage />} />

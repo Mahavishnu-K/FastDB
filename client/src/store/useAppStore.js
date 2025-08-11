@@ -74,7 +74,7 @@ export const useAppStore = create(
                     api.getDatabaseSchema(dbName),
                     api.getMermaidDiagram(dbName)
                   ]);
-                  
+                  console.log(schemaData);
                   set({
                       schema: {
                           tables: schemaData.tables.map(t => ({...t, id: t.name, rowCount: t.row_count})),
