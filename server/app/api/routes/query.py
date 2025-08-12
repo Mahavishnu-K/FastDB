@@ -18,6 +18,8 @@ from app.schemas.virtual_database_schema import VirtualDatabaseCreate
 from app.services import history_service
 from app.core.nlp_engine import convert_nl_to_sql
 from app.core import transaction_manager
+from app.core.authorization import get_user_role_for_db, user_has_at_least_role
+from app.models.database_collab_model import DBRole
 
 router = APIRouter()
 
@@ -135,6 +137,22 @@ async def run_nlp_command(
     upper_sql = sql_to_execute.strip().upper()
     result_dict = {}
 
+    if not (upper_sql.startswith('CREATE DATABASE') or upper_sql.startswith('DROP DATABASE')):
+        virtual_db_for_auth = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
+        if not virtual_db_for_auth:
+             raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
+        
+        user_role = get_user_role_for_db(db_session, user=current_user, virtual_db=virtual_db_for_auth)
+
+        # Check if the command is a "write" operation
+        is_write_operation = any(upper_sql.startswith(keyword) for keyword in ['INSERT', 'UPDATE', 'DELETE', 'CREATE TABLE', 'DROP TABLE', 'ALTER TABLE', 'TRUNCATE'])
+        
+        if is_write_operation and not user_has_at_least_role(user_role, DBRole.editor):
+            raise HTTPException(
+                status_code=403,
+                detail="Permission denied: You need 'Editor' or 'Owner' role to modify this database."
+            )
+
     try:
         if upper_sql.startswith('CREATE DATABASE'):
             # This is an admin command. Use the superuser engine.
@@ -164,6 +182,12 @@ async def run_nlp_command(
             db_to_drop = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=virtual_name_to_drop)
             if not db_to_drop:
                 raise HTTPException(status_code=404, detail=f"Database '{virtual_name_to_drop}' not found for your account.")
+            
+            if db_to_drop.user_id != current_user.user_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Permission denied: Only the database owner can drop a database."
+                )
             
             # Use the service to delete the physical DB and metadata (we'll create this service)
             vdb_service.delete_virtual_database(db_session, db_to_drop=db_to_drop)
@@ -199,6 +223,13 @@ async def run_nlp_command(
         )
         raise HTTPException(status_code=400, detail=f"SQL Execution Error: {e}")
 
+    if not result_dict.get("success"):
+        history_service.log_query_history(
+            db=db_session, owner=current_user, command=final_prompt, sql=sql_to_execute, status="error"
+        )
+        # Raise a 400 Bad Request with the specific error message from the database.
+        raise HTTPException(status_code=400, detail=result_dict.get("message", "SQL execution failed."))
+    
     # --- Step 3: Log success and format the response ---
     history_service.log_query_history(
         db=db_session, owner=current_user, command=final_prompt, sql=sql_to_execute, status="success"

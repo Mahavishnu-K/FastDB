@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, BrainCircuit } from 'lucide-react'; // Import the new icon
+import { Play, BrainCircuit } from 'lucide-react'; 
 
 const NLInput = ({ onExecute, isLoading }) => {
   const [input, setInput] = useState('');
@@ -9,21 +9,6 @@ const NLInput = ({ onExecute, isLoading }) => {
     'Update students set age = 21 where name = "John"',
     'Delete from products where price < 10'
   ]);
-
-  // Persist input to localStorage
-  useEffect(() => {
-    const savedInput = localStorage.getItem('nl_input');
-    if (savedInput) {
-      setInput(savedInput);
-    }
-  }, []);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-        localStorage.setItem('nl_input', input);
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [input]);
 
   const handleSubmit = () => {
     if (input.trim()) {

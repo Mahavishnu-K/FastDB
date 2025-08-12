@@ -75,11 +75,11 @@ def delete_virtual_database(db: Session, *, db_to_drop: VirtualDatabase):
     db.commit()
     return
 
-def get_all_dbs_for_user(db: Session, *, owner: User) -> List[VirtualDatabase]:
-    owned_dbs = db.query(VirtualDatabase).filter(VirtualDatabase.user_id == owner.user_id)
+def get_all_dbs_for_user(db: Session, *, user: User) -> List[VirtualDatabase]:
+    owned_dbs = db.query(VirtualDatabase).filter(VirtualDatabase.user_id == user.user_id)
     
     # Query for DBs the user is a member of
-    member_dbs = db.query(VirtualDatabase).join(DatabaseMember).filter(DatabaseMember.user_id == owner.user_id)
+    member_dbs = db.query(VirtualDatabase).join(DatabaseMember).filter(DatabaseMember.user_id == user.user_id)
     
     # Combine, remove duplicates, and return
     all_dbs = owned_dbs.union(member_dbs).all()
@@ -95,12 +95,12 @@ def get_collaborated_dbs_for_user(db: Session, *, user: User) -> List[VirtualDat
         VirtualDatabase.user_id != user.user_id 
     ).all()
 
-def get_owned_and_shared_dbs(db: Session, *, owner: User) -> List[VirtualDatabase]:
+def get_owned_and_shared_dbs(db: Session, *, user: User) -> List[VirtualDatabase]:
     """
     Returns a list of all virtual databases that the given user owns
     AND has shared with at least one other collaborator.
     """
     return db.query(VirtualDatabase).join(DatabaseMember).filter(
         # Condition 1: The user must be the owner of the database
-        VirtualDatabase.user_id == owner.user_id
+        VirtualDatabase.user_id == user.user_id
     ).distinct().all()

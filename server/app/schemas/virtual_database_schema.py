@@ -1,6 +1,7 @@
 # server/app/schemas/virtual_database_schema.py
 from pydantic import BaseModel, Field
 from datetime import datetime
+from app.models.database_collab_model import DBRole
 import uuid
 
 class VirtualDatabaseBase(BaseModel):
@@ -13,6 +14,7 @@ class VirtualDatabaseRead(VirtualDatabaseBase):
     id: uuid.UUID
     physical_name: str
     created_at: datetime
+    current_user_role: DBRole | None = None
 
     class Config:
         from_attributes = True

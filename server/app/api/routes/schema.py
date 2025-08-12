@@ -17,6 +17,9 @@ from app.schemas.table_schema import FullSchemaResponse, TableSchema, ColumnSche
 from app.core.sql_executor import execute_sql 
 from app.core.diagram_generator import generate_schema_as_mermaid 
 
+from app.core.authorization import get_user_role_for_db, user_has_at_least_role
+from app.models.database_collab_model import DBRole
+
 router = APIRouter()
 
 def _get_full_schema_details(inspector, engine):
@@ -164,6 +167,10 @@ async def delete_table(
     virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
     if not virtual_db:
         raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
+    
+    user_role = get_user_role_for_db(db_session, user=current_user, virtual_db=virtual_db)
+    if not user_has_at_least_role(user_role, DBRole.editor):
+        raise HTTPException(status_code=403, detail="Permission denied: 'Editor' role required.")
     
     engine = get_engine_for_user_db(virtual_db.physical_name)
     

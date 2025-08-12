@@ -9,6 +9,8 @@ from app.core.security import get_current_user
 from app.schemas.virtual_database_schema import VirtualDatabaseCreate, VirtualDatabaseRead
 from app.services import virtual_database_service as vdb_service
 
+from app.core.authorization import get_user_role_for_db
+
 router = APIRouter()
 
 @router.post(
@@ -46,7 +48,12 @@ def list_user_databases(
     current_user: User = Depends(get_current_user)
 ):
     """Lists all virtual databases owned by the current user."""
-    return vdb_service.get_all_dbs_for_user(db, owner=current_user)
+    all_dbs = vdb_service.get_all_dbs_for_user(db, user=current_user)
+
+    for db_obj in all_dbs:
+        db_obj.current_user_role = get_user_role_for_db(db, user=current_user, virtual_db=db_obj)
+
+    return all_dbs
 
 @router.get("/collaborations", response_model=List[VirtualDatabaseRead], tags=["Database Management"])
 def list_collaborated_databases(
@@ -57,7 +64,12 @@ def list_collaborated_databases(
     Lists only the databases that the current user has been invited to
     as a collaborator.
     """
-    return vdb_service.get_collaborated_dbs_for_user(db, user=current_user)
+    collaborated_dbs = vdb_service.get_collaborated_dbs_for_user(db, user=current_user)
+    
+    for db_obj in collaborated_dbs:
+        db_obj.current_user_role = get_user_role_for_db(db, user=current_user, virtual_db=db_obj)
+        
+    return collaborated_dbs
 
 @router.get("/shared-by-me", response_model=List[VirtualDatabaseRead], tags=["Database Management"])
 def list_databases_shared_by_me(
@@ -68,4 +80,11 @@ def list_databases_shared_by_me(
     Lists only the databases that the current user owns AND has shared
     with other collaborators.
     """
-    return vdb_service.get_owned_and_shared_dbs(db, owner=current_user)
+    shared_dbs = vdb_service.get_owned_and_shared_dbs(db, user=current_user)
+    
+    # --- ADD THE MISSING ANNOTATION ---
+    for db_obj in shared_dbs:
+        # The role for these will always be 'owner', but annotating explicitly is good practice.
+        db_obj.current_user_role = "owner"
+        
+    return shared_dbs

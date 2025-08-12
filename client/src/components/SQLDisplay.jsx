@@ -8,28 +8,6 @@ const SQLDisplay = ({ sql, setSql, onExecuteSql, selectedDb, onSaveQuery }) => {
   const [explainResult, setExplainResult] = useState(null);
   const [isExplaining, setIsExplaining] = useState(false);
 
-  // --- IMPROVEMENT: Persist SQL to localStorage ---
-  useEffect(() => {
-    // On mount, if sql prop is empty, try to load from storage
-    if (!sql) {
-        const savedSql = localStorage.getItem(`sql_display_${selectedDb}`);
-        if (savedSql) {
-            setSql(savedSql);
-        }
-    }
-  }, []); // Run only once on mount
-
-  useEffect(() => {
-    // On change, save SQL to storage, scoped by the current DB
-    if (sql && selectedDb) {
-        const handler = setTimeout(() => {
-            localStorage.setItem(`sql_display_${selectedDb}`, sql);
-        }, 500); // Debounce
-        return () => clearTimeout(handler);
-    }
-  }, [sql, selectedDb]);
-
-
   useEffect(() => {
     setExplainResult(null);
   }, [sql]);

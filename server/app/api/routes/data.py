@@ -13,6 +13,9 @@ from app.db.engine import get_engine_for_user_db
 from app.services import virtual_database_service as vdb_service
 from sqlalchemy.orm import Session
 
+from app.core.authorization import get_user_role_for_db, user_has_at_least_role
+from app.models.database_collab_model import DBRole
+
 from app.services import sql_builder
 
 router = APIRouter()
@@ -119,6 +122,10 @@ async def insert_data_into_table(
     if not virtual_db:
         raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
     
+    user_role = get_user_role_for_db(db_session, user=current_user, virtual_db=virtual_db)
+    if not user_has_at_least_role(user_role, DBRole.editor):
+        raise HTTPException(status_code=403, detail="Permission denied: 'Editor' role required.")
+    
     engine = get_engine_for_user_db(virtual_db.physical_name)
     
     # Use SQLAlchemy Core for safe, efficient bulk inserts
@@ -192,6 +199,10 @@ async def update_data(
     if not virtual_db:
         raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
     
+    user_role = get_user_role_for_db(db_session, user=current_user, virtual_db=virtual_db)
+    if not user_has_at_least_role(user_role, DBRole.editor):
+        raise HTTPException(status_code=403, detail="Permission denied: 'Editor' role required.")
+    
     engine = get_engine_for_user_db(virtual_db.physical_name)
     
     try:
@@ -218,6 +229,10 @@ async def delete_data(
     virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
     if not virtual_db:
         raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
+    
+    user_role = get_user_role_for_db(db_session, user=current_user, virtual_db=virtual_db)
+    if not user_has_at_least_role(user_role, DBRole.editor):
+        raise HTTPException(status_code=403, detail="Permission denied: 'Editor' role required.")
     
     engine = get_engine_for_user_db(virtual_db.physical_name)
     

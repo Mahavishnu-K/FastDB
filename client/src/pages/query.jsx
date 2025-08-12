@@ -38,9 +38,15 @@ const Query = () => {
 
   const handleCommand = useCallback(async (command, isSqlOnly = false) => {
       if (!selectedDb) { toast.error("No database selected."); return; }
-      setIsLoading(true); setError(''); setQueryResult(null);
+      setIsLoading(true); 
+      setError(''); 
+      setQueryResult(null); 
+      if (!isSqlOnly) {
+        setCurrentSQL('');
+      }
       try {
           const result = await api.executeCommand(command, selectedDb);
+          console.log(result);
           if (!isSqlOnly) setCurrentSQL(result.sql_query || '');
           if (result.result && result.result.data) {
               setQueryResult({ data: result.result.data });
@@ -51,6 +57,7 @@ const Query = () => {
           const errorMessage = err.response?.data?.detail || err.message || 'An unknown error occurred.';
           setError(errorMessage);
           toast.error(errorMessage);
+          queryClient.invalidateQueries({ queryKey: ['history'] });
       } finally { setIsLoading(false); }
   }, [selectedDb, queryClient]);
 
