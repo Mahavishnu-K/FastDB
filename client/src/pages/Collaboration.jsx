@@ -125,11 +125,11 @@ const MemberRow = ({ dbName, member, onUpdate, currentUserRole }) => {
     }
   };
   
-  const roleIcons = {
-    owner: <Crown className="w-4 h-4 text-yellow-500" title="Owner"/>,
-    editor: <Edit3 className="w-4 h-4 text-blue-500" title="Editor"/>,
-    viewer: <Eye className="w-4 h-4 text-text-muted-light dark:text-text-muted-dark" title="Viewer"/>,
-  };
+  // const roleIcons = {
+  //   owner: <Crown className="w-4 h-4 text-yellow-500" title="Owner"/>,
+  //   editor: <Edit3 className="w-4 h-4 text-blue-500" title="Editor"/>,
+  //   viewer: <Eye className="w-4 h-4 text-text-muted-light dark:text-text-muted-dark" title="Viewer"/>,
+  // };
 
   const canEdit = currentUserRole === 'owner' || currentUserRole === 'editor';
 
@@ -137,7 +137,7 @@ const MemberRow = ({ dbName, member, onUpdate, currentUserRole }) => {
     <div className="bg-bg-light dark:bg-bg-dark rounded-md p-3 border border-border-light dark:border-border-dark hover:bg-slate-50 transition-colors">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {roleIcons[member.role]}
+          {/* {roleIcons[member.role]} */}
           <div>
             <p className="font-medium text-sm text-text-light dark:text-text-dark">{member.name}</p>
             <p className="text-xs text-text-muted-light dark:text-text-muted-dark">{member.email}</p>
@@ -158,19 +158,19 @@ const MemberRow = ({ dbName, member, onUpdate, currentUserRole }) => {
                   </select>
                   <button 
                     onClick={handleRemove} 
-                    className="bg-fg-light dark:bg-fg-dark text-xs px-2 py-1 rounded border border-border-light dark:border-border-dark focus:ring-1 focus:ring-blue-500 focus:outline-none cursor-pointer"
+                    className="bg-fg-light dark:bg-fg-dark text-xs px-3 py-1.5 rounded border border-border-light dark:border-border-dark focus:ring-1 focus:ring-blue-500 focus:outline-none cursor-pointer"
                   >
                     Revoke
                   </button>
                 </div>
               ) : (
-                <span className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark capitalize px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">
+                <span className="text-xs font-medium text-text-muted-light dark:text-text-muted-dark capitalize px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded">
                   {member.role}
                 </span>
               )}
             </>
           ) : (
-            <span className="text-xs text-yellow-600 dark:text-yellow-400 font-medium px-2 py-1 bg-yellow-500/10 rounded">
+            <span className="text-xs font-medium capitalize px-3 py-1.5 bg-fg-light dark:bg-fg-dark border border-border-light dark:border-border-dark  rounded">
               Owner
             </span>
           )}
@@ -348,9 +348,9 @@ const MyDatabases = ({ onShareSuccess }) => {
                         <Database className="w-5 h-5 text-text-muted-light dark:text-text-muted-dark"/>
                         <span className="font-medium text-text-light dark:text-text-dark">{db.virtual_name}</span>
                     </div>
-                    <button onClick={() => handleShare(db)} className="flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-600">
+                    <button onClick={() => handleShare(db)} className="flex items-center gap-2 text-sm font-medium hover:text-white">
                         <UserPlus className="w-4 h-4"/>
-                        <span>Invite</span>
+                        <span>Collab</span>
                     </button>
                 </div>
             ))}
