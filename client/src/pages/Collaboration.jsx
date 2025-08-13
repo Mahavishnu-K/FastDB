@@ -1,5 +1,5 @@
-import { ChevronRight, Crown, Database, Edit3, Eye, GitMerge, Loader, Mail, Send, Settings2, Share2, Trash2, UserPlus, X } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { ChevronRight, ChevronDown, ChevronUp, Crown, Database, Edit3, Eye, User, GitMerge, Loader, Cable, Mail, Send, Waypoints, Settings2, Share2, Trash2, UserPlus, X } from 'lucide-react';
+import { useCallback, useEffect,useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useConfirm } from '../contexts/ConfirmationContext';
 import { useUser } from '../contexts/UserContext';
@@ -9,11 +9,85 @@ import { useAppStore } from '../store/useAppStore';
 // ===================================================================
 // === Sub-Component 1: The Invite Modal (No changes) ===
 // ===================================================================
+const CustomSelect = ({ value, onChange, className }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const options = [
+    { value: 'editor', label: 'Editor', icon: User },
+    { value: 'viewer', label: 'Viewer', icon: Eye }
+  ];
+
+  const selectedOption = options.find(option => option.value === value);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleOptionSelect = (optionValue) => {
+    onChange({ target: { value: optionValue } });
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`${className} flex items-center gap-1.5 min-w-[80px] justify-between hover:border-gray-300 dark:hover:border-slate-600 transition-colors`}
+      >
+        <div className="flex items-center gap-1.5">
+          <selectedOption.icon className="w-3 h-3 text-text-muted-light dark:text-text-muted-dark" />
+          <span className="text-text-light dark:text-text-dark">{selectedOption.label}</span>
+        </div>
+        <ChevronDown className={`w-3 h-3 text-text-muted-light dark:text-text-muted-dark transition-transform duration-200 ${isOpen ? 'transform rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full right-0 mt-1 bg-fg-light dark:bg-fg-dark border border-border-light dark:border-border-dark rounded-md shadow-lg z-10 overflow-hidden min-w-[100px]">
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => handleOptionSelect(option.value)}
+              className={`w-full px-2 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors duration-150 border-b border-border-light dark:border-border-dark last:border-b-0 ${
+                value === option.value ? 'bg-slate-50 dark:bg-slate-800/50' : ''
+              }`}
+            >
+              <div className="flex items-center gap-1.5">
+                <option.icon className="w-3 h-3 text-text-muted-light dark:text-text-muted-dark" />
+                <span className="text-xs text-text-light dark:text-text-dark">
+                  {option.label}
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const InviteMemberModal = ({ dbName, onClose, onInviteSuccess }) => {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('editor');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const options = [
+    { value: 'editor', label: 'Editor', icon: User, description: 'Can edit and manage content' },
+    { value: 'viewer', label: 'Viewer', icon: Eye, description: 'Read-only access' }
+  ];
+
+  const selectedOption = options.find(option => option.value === role);
+
 
   const handleInvite = async (e) => {
     e.preventDefault();
@@ -30,61 +104,100 @@ const InviteMemberModal = ({ dbName, onClose, onInviteSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-fg-light dark:bg-fg-dark rounded-lg shadow-2xl w-full max-w-lg border border-border-light dark:border-border-dark" onClick={e => e.stopPropagation()}>
-        <div className="p-3 border-b border-border-light dark:border-border-dark flex justify-between items-center">
-          <h2 className="text-lg font-medium text-text-light dark:text-text-dark flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-blue-500"/>
-            Invite to "{dbName}"
-          </h2>
-          <button onClick={onClose} className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <form onSubmit={handleInvite}>
-          <div className="p-3 space-y-4">
-            <div>
-              <label className="text-sm font-medium text-text-light dark:text-text-dark mb-2 block">Member's Email</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted-light dark:text-text-muted-dark" />
-                <input 
-                  type="email" 
-                  value={email} 
-                  onChange={e => setEmail(e.target.value)} 
-                  placeholder="user@example.com" 
-                  required 
-                  className="w-full bg-bg-light dark:bg-bg-dark p-3 pl-10 rounded-md border border-border-light dark:border-border-dark focus:ring-1 focus:ring-blue-500 focus:outline-none text-sm" 
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-text-light dark:text-text-dark mb-2 block">Role</label>
-              <select 
-                value={role} 
-                onChange={e => setRole(e.target.value)} 
-                className="w-full bg-bg-light dark:bg-bg-dark p-3 rounded-md border border-border-light dark:border-border-dark focus:ring-1 focus:ring-blue-500 focus:outline-none text-sm"
-              >
-                <option value="editor">Editor</option>
-                <option value="viewer">Viewer</option>
-              </select>
-            </div>
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm p-3 rounded-lg">
-                {error}
-              </div>
-            )}
-          </div>
-          <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-4 flex justify-end rounded-b-lg border-t border-border-light dark:border-border-dark">
-            <button 
-              type="submit" 
-              disabled={isLoading} 
-              className="bg-blue-500 text-white px-4 py-2 rounded-md flex items-center gap-2 text-sm font-medium hover:bg-blue-600 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
-            >
-              {isLoading ? <Loader className="animate-spin w-4 h-4"/> : <Send className="w-4 h-4" />}
-              Send Invite
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-900 p-4 flex items-center justify-center">
+      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div className="bg-fg-light dark:bg-fg-dark rounded-lg shadow-2xl w-full max-w-lg border border-border-light dark:border-border-dark" onClick={e => e.stopPropagation()}>
+          <div className="p-3 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+            <h2 className="text-lg font-medium text-text-light dark:text-text-dark flex items-center gap-2">
+              <Waypoints className="w-6 h-6"/>
+              Share {dbName} database
+            </h2>
+            <button onClick={onClose} className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+              <X className="w-5 h-5" />
             </button>
           </div>
-        </form>
+          <form onSubmit={handleInvite}>
+            <div className="p-3 space-y-4">
+              <div>
+                <label className="text-sm font-medium text-text-light dark:text-text-dark mb-2 block">Member Email</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted-light dark:text-text-muted-dark" />
+                  <input 
+                    type="email" 
+                    value={email} 
+                    onChange={e => setEmail(e.target.value)} 
+                    placeholder="Mail" 
+                    required 
+                    className="w-full bg-bg-light dark:bg-bg-dark p-3 pl-10 rounded-md border border-border-light dark:border-border-dark focus:ring-1 focus:ring-blue-500 focus:outline-none text-sm" 
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-text-light dark:text-text-dark mb-2 block">Role</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="w-full bg-bg-light dark:bg-bg-dark p-3 rounded-md border border-border-light dark:border-border-dark focus:ring-1 focus:ring-blue-500 focus:outline-none text-sm text-left flex items-center justify-between hover:border-gray-300 dark:hover:border-slate-600 transition-all duration-200"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <selectedOption.icon className="w-4 h-4 text-text-muted-light dark:text-text-muted-dark" />
+                      <span className="text-text-light dark:text-text-dark">{selectedOption.label}</span>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-text-muted-light dark:text-text-muted-dark transition-transform duration-200 ${isOpen ? 'transform rotate-180' : ''}`} />
+                  </button>
+
+                  {isOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-bg-light dark:bg-bg-dark border border-border-light dark:border-border-dark rounded-md shadow-lg z-10 overflow-hidden">
+                      {options.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => {
+                            setRole(option.value);
+                            setIsOpen(false);
+                          }}
+                          className={`w-full p-3 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors duration-150 border-b border-border-light dark:border-border-dark last:border-b-0 ${
+                            role === option.value ? 'bg-slate-50 dark:bg-slate-800/50' : ''
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <option.icon className="w-4 h-4 text-text-muted-light dark:text-text-muted-dark" />
+                            <div>
+                              <div className="text-sm font-medium text-text-light dark:text-text-dark">
+                                {option.label}
+                              </div>
+                              <div className="text-xs text-text-muted-light dark:text-text-muted-dark">
+                                {option.description}
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm p-3 rounded-lg">
+                  {error}
+                </div>
+              )}
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-4 flex justify-end rounded-b-lg border-t border-border-light dark:border-border-dark">
+              <button 
+                type="submit" 
+                disabled={isLoading} 
+                className="bg-bg-light dark:bg-bg-dark text-sm px-3 py-2.5 rounded-md flex items-center gap-2 font-medium hover:bg-slate-100 dark:hover:bg-slate-900 border border-border-light dark:border-border-dark disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors"
+              >
+                {isLoading ? <Loader className="animate-spin w-4 h-4"/> : <Send className="w-4 h-4" />}
+                Send Invite
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
@@ -124,12 +237,6 @@ const MemberRow = ({ dbName, member, onUpdate, currentUserRole }) => {
       }
     }
   };
-  
-  // const roleIcons = {
-  //   owner: <Crown className="w-4 h-4 text-yellow-500" title="Owner"/>,
-  //   editor: <Edit3 className="w-4 h-4 text-blue-500" title="Editor"/>,
-  //   viewer: <Eye className="w-4 h-4 text-text-muted-light dark:text-text-muted-dark" title="Viewer"/>,
-  // };
 
   const canEdit = currentUserRole === 'owner' || currentUserRole === 'editor';
 
@@ -148,14 +255,11 @@ const MemberRow = ({ dbName, member, onUpdate, currentUserRole }) => {
             <>
               {canEdit ? (
                 <div className="flex items-center gap-2">
-                  <select 
+                  <CustomSelect 
                     value={newRole} 
                     onChange={handleRoleChange} 
                     className="bg-fg-light dark:bg-fg-dark text-xs px-2 py-1 rounded border border-border-light dark:border-border-dark focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                  >
-                    <option value="editor">Editor</option>
-                    <option value="viewer">Viewer</option>
-                  </select>
+                  />
                   <button 
                     onClick={handleRemove} 
                     className="bg-fg-light dark:bg-fg-dark text-xs px-3 py-1.5 rounded border border-border-light dark:border-border-dark focus:ring-1 focus:ring-blue-500 focus:outline-none cursor-pointer"
@@ -254,7 +358,7 @@ const SharedDbCard = ({ database, currentUserRole }) => {
                 <div className="pt-3 border-t border-border-light dark:border-border-dark">
                   <button 
                     onClick={() => setIsInviting(true)} 
-                    className="w-full flex items-center justify-center gap-2 text-sm font-medium bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
+                    className="w-full flex items-center justify-center gap-2 text-sm font-medium bg-bg-light dark:bg-bg-dark hover:bg-slate-100 dark:hover:bg-gray-900 border border-border-light dark:border-border-dark text-white px-4 py-2.5 rounded-md transition-colors"
                   >
                     <UserPlus className="w-4 h-4" />
                     Invite New Member
@@ -516,12 +620,11 @@ const CollaborationPage = () => {
 
       {/* Bottom Row - Two Columns Side by Side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Databases I've Shared */}
         <div className="bg-fg-light dark:bg-fg-dark border border-border-light dark:border-border-dark rounded-lg">
           <div className="p-3 border-b border-border-light dark:border-border-dark">
             <h2 className="font-medium text-text-light dark:text-text-dark flex items-center gap-2">
               <Share2 className="w-4 h-4 text-blue-500" />
-              Databases I've Shared
+              Databases Shared
             </h2>
             <p className="text-sm text-text-muted-light dark:text-text-muted-dark mt-1">
               Manage access for your collaborators.

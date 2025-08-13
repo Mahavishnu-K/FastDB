@@ -1,33 +1,106 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GitBranch, Maximize2, Minimize2, RefreshCw, Plus, Minus, RefreshCcw, Move } from 'lucide-react';
 import MermaidRenderer from './MermaidRenderer';
+import mermaid from 'mermaid';
 
 /**
  * A component to render a styled, interactive Entity-Relationship diagram.
  * It now features a pannable and zoomable canvas, allowing users to easily
  * navigate complex diagrams.
  */
+
+
+
 const ERDiagram = ({ mermaidString, onRefresh }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [renderKey, setRenderKey] = useState(Date.now());
-  
+  const [theme, setTheme] = useState('default');
+  const viewportRef = useRef(null);
+  const svgContainerRef = useRef(null);
+
   // State for pan and zoom
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef(null);
-
+  
   useEffect(() => {
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'class') {
-          setRenderKey(Date.now());
-        }
-      });
-    });
-    observer.observe(document.documentElement, { attributes: true });
+    const checkTheme = () => {
+      const isDarkMode = document.documentElement.classList.contains('dark');
+      setTheme(isDarkMode ? 'dark' : 'default');
+    };
+    
+    // Check theme on initial mount
+    checkTheme();
+
+    // Use a MutationObserver to watch for class changes on the <html> element
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
+    // Cleanup the observer when the component unmounts
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (mermaidString && svgContainerRef.current && viewportRef.current) {
+      const renderDiagram = async () => {
+        try {
+          // 1. Initialize Mermaid with the CURRENT theme BEFORE rendering.
+          mermaid.initialize({
+            startOnLoad: false,
+            theme: theme, // Use the theme from our state
+            securityLevel: 'loose',
+            er: { useMaxWidth: false },
+            fontFamily: 'inherit',
+            themeVariables: {
+              background: theme === 'dark' ? '#0A0A0A' : '#FFFFFF',
+              primaryColor: theme === 'dark' ? '#1E1E1E' : '#F9FAFB',
+              primaryTextColor: theme === 'dark' ? '#E5E7EB' : '#1F2937',
+              lineColor: theme === 'dark' ? '#7C828F' : '#292828',
+            }
+          });
+          const { svg } = await mermaid.render(`mermaid-graph-${Date.now()}`, mermaidString);
+          if (svgContainerRef.current) {
+            svgContainerRef.current.innerHTML = svg;
+            const isDarkMode = document.documentElement.classList.contains('dark');
+          mermaid.initialize({
+            startOnLoad: false,
+            theme: isDarkMode ? 'dark' : '',
+            securityLevel: 'loose',
+            er: { useMaxWidth: false }, 
+            fontFamily: 'inherit'
+          });
+            // --- Auto-fit Logic ---
+            const svgElement = svgContainerRef.current.querySelector('svg');
+            const viewport = viewportRef.current;
+            if (svgElement && viewport) {
+              const svgRect = svgElement.getBoundingClientRect();
+              const viewportRect = viewport.getBoundingClientRect();
+              
+              const scaleX = viewportRect.width / svgRect.width;
+              const scaleY = viewportRect.height / svgRect.height;
+              const initialZoom = Math.min(scaleX, scaleY, 1) * 1; // Fit with 10% padding, max zoom 1
+              
+              // Center the diagram
+              const initialX = (viewportRect.width - (svgRect.width * initialZoom)) / 2;
+              const initialY = (viewportRect.height - (svgRect.height * initialZoom)) / 2;
+              
+              setZoom(initialZoom);
+              setPosition({ x: initialX, y: initialY });
+            }
+          }
+        } catch (error) {
+          console.error("Mermaid rendering error:", error);
+          if (svgContainerRef.current) {
+            svgContainerRef.current.innerHTML = `<div class="text-red-400">Error rendering diagram.</div>`;
+          }
+        }
+      };
+      renderDiagram();
+    } else if (svgContainerRef.current) {
+      svgContainerRef.current.innerHTML = ''; // Clear previous diagram if string is empty
+    }
+  }, [mermaidString, theme]); 
 
   const handleMouseDown = (e) => {
     e.preventDefault();
@@ -57,8 +130,7 @@ const ERDiagram = ({ mermaidString, onRefresh }) => {
   };
   
   const handleResetView = () => {
-      setZoom(1);
-      setPosition({ x: 0, y: 0 });
+      onRefresh();
   };
 
   const FallbackContent = () => (
@@ -81,23 +153,25 @@ const ERDiagram = ({ mermaidString, onRefresh }) => {
       </div>
       
       <div 
-        className={`p-4 flex-1 min-h-[400px] flex justify-center items-center bg-dot-grid-light dark:bg-dot-grid-dark overflow-hidden ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`}
-        style={{ backgroundPosition: `${position.x}px ${position.y}px` }}
+        ref={viewportRef}
+        className={`flex-1 min-h-[400px] bg-dot-grid-light dark:bg-dot-grid-dark overflow-hidden relative ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUpOrLeave}
         onMouseLeave={handleMouseUpOrLeave}
       >
         <div 
-            className={`${!isPanning ? 'transition-transform duration-200 ease-in-out' : ''}`}
-            style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})` }}
+            style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`, transformOrigin: 'top left' }}
         >
-          {mermaidString ? (
-            <MermaidRenderer chart={mermaidString} key={renderKey} />
-          ) : (
-            <FallbackContent />
-          )}
+          {/* The SVG will be rendered inside this div */}
+          <div ref={svgContainerRef} />
         </div>
+        {/* The fallback is now positioned absolutely within the viewport */}
+        {!mermaidString && (
+            <div className="absolute inset-0 flex items-center justify-center">
+                <FallbackContent />
+            </div>
+        )}
       </div>
 
       <div className="flex items-center justify-center space-x-3 p-2 border-t border-border-light dark:border-border-dark bg-fg-light dark:bg-fg-dark rounded-b-lg">
