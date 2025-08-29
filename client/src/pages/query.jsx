@@ -20,12 +20,11 @@ const Query = () => {
   const prompt = usePrompt();
   const confirm = useConfirm();
   const queryClient = useQueryClient();
-  const { selectedDb, mermaidString, fetchSchemaAndDiagram } = useAppStore();
+  const { selectedDb, mermaidString, fetchSchemaAndDiagram, refreshDatabases } = useAppStore();
   const { setActions } = useCommandPalette();
 
   const [currentSQL, setCurrentSQL] = useState('');
   const [queryResult, setQueryResult] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
   const [historySearch, setHistorySearch] = useState('');
@@ -73,6 +72,7 @@ const Query = () => {
           } else {
             setIsGeneratingSql(false);
           }
+          await refreshDatabases();
       }
   }, [selectedDb, queryClient]);
 

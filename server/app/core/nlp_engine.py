@@ -122,12 +122,14 @@ Example Response:
         except Exception as e:
             raise Exception(f"LLM API call failed: {e}")
 
-    async def generate_sql(self, user_command: str, schema_context: str) -> Dict[str, Any]:
+    async def generate_sql(self, current_database: str, user_command: str, schema_context: str) -> Dict[str, Any]:
         """
         The primary method to convert a natural language command into a structured SQL response.
         This is the main entry point for the API.
         """
         user_prompt = f"""
+        Current Database: "{current_database}"
+
         User Command: "{user_command}"
 
         Current Database Schema:
@@ -154,5 +156,5 @@ Example Response:
 nlp_engine = NLPEngine()
 
 # The function to be imported by the API route
-async def convert_nl_to_sql(command: str, schema: str) -> Dict[str, Any]:
-    return await nlp_engine.generate_sql(command, schema)
+async def convert_nl_to_sql(current_database: str, command: str, schema: str) -> Dict[str, Any]:
+    return await nlp_engine.generate_sql(current_database, command, schema)

@@ -6,7 +6,7 @@ import { CommandPalette, CommandPaletteProvider, useCommandPalette } from './com
 import Header from './components/Header';
 import ProtectedRoute from './components/protectedRoute';
 import Scratchpad from './components/ScratchPad';
-import Sidebar from './components/Sidebar';
+import Sidebar from './components/sidebar'; 
 import WelcomeModal from './components/WelcomeModal';
 import { ConfirmationProvider } from './contexts/ConfirmationContext';
 import { InputProvider } from './contexts/InputContext';

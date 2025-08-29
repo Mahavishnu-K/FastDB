@@ -104,3 +104,40 @@ def get_owned_and_shared_dbs(db: Session, *, user: User) -> List[VirtualDatabase
         # Condition 1: The user must be the owner of the database
         VirtualDatabase.user_id == user.user_id
     ).distinct().all()
+
+def rename_virtual_database(db: Session, *, owner: User, old_virtual_name: str, new_virtual_name: str) -> VirtualDatabase:
+    """
+    Renames a user's virtual database. This involves renaming the physical
+    database and updating the metadata record.
+    """
+    db_to_rename = get_accessible_database(db, user=owner, virtual_name=old_virtual_name)
+    if not db_to_rename:
+        raise ValueError(f"Database '{old_virtual_name}' not found for your account.")
+
+    if db_to_rename.user_id != owner.user_id:
+        raise PermissionError("Only the database owner can rename a database.")
+
+    if get_accessible_database(db, user=owner, virtual_name=new_virtual_name):
+        raise ValueError(f"You already have a database named '{new_virtual_name}'.")
+    
+    old_physical_name = db_to_rename.physical_name
+    new_physical_name = generate_physical_name(owner.user_id, new_virtual_name)
+    
+    engine = get_superuser_engine()
+    with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+        print(f"Terminating any active connections to '{old_physical_name}'...")    
+        terminate_query = text(f"""
+            SELECT pg_terminate_backend(pid) FROM pg_stat_activity
+            WHERE datname = '{old_physical_name}' AND pid <> pg_backend_pid();
+        """)
+        conn.execute(terminate_query)
+        print("Connections terminated.")
+        print(f"Renaming physical database from '{old_physical_name}' to '{new_physical_name}'...")
+        conn.execute(text(f'ALTER DATABASE "{old_physical_name}" RENAME TO "{new_physical_name}";'))
+        
+    db_to_rename.virtual_name = new_virtual_name
+    db_to_rename.physical_name = new_physical_name
+    
+    db.commit()
+    db.refresh(db_to_rename)
+    return db_to_rename

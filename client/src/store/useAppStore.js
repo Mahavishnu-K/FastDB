@@ -44,6 +44,37 @@ export const useAppStore = create(
                     set({ appIsLoading: false });
                 }
             },
+
+            /**
+             * Refreshes the database list without full app reinitialization.
+             * Useful when databases are created, dropped, or renamed.
+            */
+            refreshDatabases: async () => {
+                try {
+                    const dbList = await api.listDatabases();
+                    const currentSelectedDb = get().selectedDb;
+                    
+                    // Check if the currently selected database still exists
+                    const selectedDbStillExists = dbList.some(db => db.virtual_name === currentSelectedDb);
+                    
+                    if (!selectedDbStillExists) {
+                        // If current DB was deleted/renamed, select the first available DB or clear selection
+                        const newSelectedDb = dbList.length > 0 ? dbList[0].virtual_name : '';
+                        set({ databases: dbList, selectedDb: newSelectedDb });
+                        
+                        if (newSelectedDb) {
+                            await get().fetchSchemaAndDiagram(newSelectedDb);
+                        } else {
+                            set({ schema: { tables: [], views: [], indexes: [] }, mermaidString: '' });
+                        }
+                    } else {
+                        // Just update the database list, keep current selection
+                        set({ databases: dbList });
+                    }
+                } catch (err) {
+                    set({ error: 'Failed to refresh databases.' });
+                }
+            },
             
             /**
              * Changes the currently selected database and fetches its schema.

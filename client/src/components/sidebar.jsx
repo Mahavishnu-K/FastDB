@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Database, Table, X, LogOut, ChevronRight, Minus, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import * as api from '../services/apiServices';
@@ -20,6 +20,38 @@ const Sidebar = ({ isOpen, onToggle, databases, selectedDb, onDbChange, onTableS
     const [cachedSchemas, setCachedSchemas] = useState({});
     const [loadingSchemaFor, setLoadingSchemaFor] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+
+    useEffect(() => {
+        setCachedSchemas(prevCache => {
+            const currentDbNames = new Set(databases.map(db => db.virtual_name));
+            const newCache = {};
+            
+            // Only keep cached schemas for databases that still exist
+            Object.keys(prevCache).forEach(dbName => {
+                if (currentDbNames.has(dbName)) {
+                    newCache[dbName] = prevCache[dbName];
+                }
+            });
+            
+            return newCache;
+        });
+        
+        // Also clear expanded items for databases that no longer exist
+        setExpandedItems(prevExpanded => {
+            const newExpanded = new Set();
+            const currentDbIds = new Set(databases.map(db => db.id));
+            
+            prevExpanded.forEach(itemId => {
+                // Keep expanded items that are either current database IDs or table IDs from existing databases
+                if (currentDbIds.has(itemId) || 
+                    databases.some(db => itemId.startsWith(`${db.virtual_name}::`))) {
+                    newExpanded.add(itemId);
+                }
+            });
+            
+            return newExpanded;
+        });
+    }, [databases]);
 
     const handleToggleExpand = async (itemId, itemType, dbName) => {
         const isCurrentlyExpanded = expandedItems.has(itemId);

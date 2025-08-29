@@ -125,7 +125,8 @@ async def run_nlp_command(
         # Connect to the user's DB to get schema for the LLM
         engine = get_engine_for_user_db(virtual_db.physical_name if virtual_db else "postgres")
         schema_context = generate_schema_as_mermaid(engine)
-        nl_response = await convert_nl_to_sql(final_prompt, schema_context)
+
+        nl_response = await convert_nl_to_sql(x_target_database, final_prompt, schema_context)
         
         if nl_response.get("query_type") == "ERROR":
             error_msg = nl_response.get("explanation", "Unknown error from NLP engine.")
@@ -192,6 +193,26 @@ async def run_nlp_command(
             # Use the service to delete the physical DB and metadata (we'll create this service)
             vdb_service.delete_virtual_database(db_session, db_to_drop=db_to_drop)
             result_dict = {"success": True, "message": f"Database '{virtual_name_to_drop}' dropped successfully."}
+
+        elif upper_sql.startswith('ALTER DATABASE'):
+            print("INFO: ALTER DATABASE command detected. Handling rename.")
+            
+            # Use regex to safely parse the old and new names from the SQL
+            import re
+            match = re.search(r'ALTER DATABASE\s+([\w_]+)\s+RENAME TO\s+([\w_]+);?', sql_to_execute.strip(), re.IGNORECASE)
+            if not match:
+                raise HTTPException(status_code=400, detail="Could not parse RENAME DATABASE command.")
+            
+            old_name, new_name = match.groups()
+            
+            try:
+                # Call the new, secure service function
+                vdb_service.rename_virtual_database(db_session, owner=current_user, old_virtual_name=old_name, new_virtual_name=new_name)
+                result_dict = {"success": True, "message": f"Database '{old_name}' renamed to '{new_name}' successfully."}
+            except (PermissionError, ValueError) as e:
+                raise HTTPException(status_code=400, detail=str(e))
+            except Exception as e:
+                 raise HTTPException(status_code=500, detail=f"Failed to rename database: {e}")
 
         else:
             # --- STANDARD LOGIC FOR ALL OTHER QUERIES (SELECT, INSERT, etc.) ---
