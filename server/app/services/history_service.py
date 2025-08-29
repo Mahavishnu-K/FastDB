@@ -53,3 +53,16 @@ def save_query(db: Session, *, owner: User, query: SavedQueryCreate):
     db.commit()
     db.refresh(db_query)
     return db_query
+
+def delete_saved_query(db: Session, *, owner: User, query_id: int):
+    """
+    Deletes a saved query by its ID, ensuring it belongs to the owner.
+    """
+    db_query = db.query(SavedQuery).filter(SavedQuery.id == query_id).first()
+
+    if not db_query or db_query.user_id != owner.user_id:
+        raise ValueError("Saved query not found.")
+
+    db.delete(db_query)
+    db.commit()
+    return 

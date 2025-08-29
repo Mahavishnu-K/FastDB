@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion';
-import { Check, Copy, LucideNotebookText, Menu, Square, User } from 'lucide-react';
+import { Check, Copy, LucideNotebookText, Menu, User } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
+import fastdbLogo from '../assets/fastdb_logo.png';
 
 /**
  * Renders the main application header with navigation, a theme switcher, and a user profile menu.
@@ -68,9 +69,9 @@ const Header = ({ onSidebarToggle, onScratchpadToggle }) => {
             <Menu className="w-5 h-5 text-text-muted-light dark:text-text-muted-dark" />
           </motion.button>
           <div className="flex items-center space-x-2">
-            <Square className="w-5 h-5 text-blue-500" />
+            <img src={fastdbLogo} style={{width: 'auto', height: '30px'}} alt="FastDB Database" />
             <div>
-              <h1 className="text-sm font-semibold">FastDB</h1>
+              <h1 className="text-lg font-semibold">FastDB</h1>
             </div>
           </div>
         </div>

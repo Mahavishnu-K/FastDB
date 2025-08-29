@@ -1,5 +1,5 @@
-import { History, Save, Table, SlidersHorizontal, X } from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { History, Save } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -13,8 +13,6 @@ import { useConfirm } from '../contexts/ConfirmationContext';
 import { usePrompt } from '../contexts/InputContext';
 import * as api from '../services/apiServices';
 import { useAppStore } from '../store/useAppStore';
-
-const EmptyResultsPlaceholder = () => ( <div className="bg-fg-light dark:bg-fg-dark rounded-lg p-8 text-center border border-border-light dark:border-border-dark"><Table className="w-12 h-12 text-text-muted-light dark:text-text-muted-dark mx-auto mb-4" /><h3 className="text-base font-semibold mb-1">No Data Available</h3><p className="text-sm text-text-muted-light dark:text-text-muted-dark">Your query ran successfully but returned no rows.</p></div>);
 
 const Query = () => {
   const location = useLocation();
@@ -33,12 +31,23 @@ const Query = () => {
   const [historySearch, setHistorySearch] = useState('');
   const [historyFilter, setHistoryFilter] = useState('all'); // 'all', 'destructive', 'error'
 
+  const [isGeneratingSql, setIsGeneratingSql] = useState(false); 
+  const [isExecutingSql, setIsExecutingSql] = useState(false);
+
   const { data: queryHistory = [] } = useQuery({ queryKey: ['history'], queryFn: api.getQueryHistory });
   const { data: savedQueries = [] } = useQuery({ queryKey: ['savedQueries'], queryFn: api.getSavedQueries });
 
+  const processedAutoQuery = useRef(null);
+
   const handleCommand = useCallback(async (command, isSqlOnly = false) => {
       if (!selectedDb) { toast.error("No database selected."); return; }
-      setIsLoading(true); 
+
+      if (isSqlOnly) {
+        setIsExecutingSql(true);
+      } else {
+        setIsGeneratingSql(true);
+      }
+
       setError(''); 
       setQueryResult(null); 
       if (!isSqlOnly) {
@@ -58,12 +67,18 @@ const Query = () => {
           setError(errorMessage);
           toast.error(errorMessage);
           queryClient.invalidateQueries({ queryKey: ['history'] });
-      } finally { setIsLoading(false); }
+      } finally { 
+          if (isSqlOnly) {
+            setIsExecutingSql(false);
+          } else {
+            setIsGeneratingSql(false);
+          }
+      }
   }, [selectedDb, queryClient]);
 
   const handleNLCommand = (command) => handleCommand(command, false);
 
-  const handleRunSQL = async (sql) => {
+  const handleRunSQL = useCallback(async (sql) => {
     const destructiveKeywords = ['DELETE', 'UPDATE', 'DROP', 'TRUNCATE', 'ALTER'];
     const isDestructive = destructiveKeywords.some(keyword => new RegExp(`\\b${keyword}\\b`, 'i').test(sql));
     if (isDestructive) {
@@ -71,27 +86,29 @@ const Query = () => {
         if (!wasConfirmed) { toast.error("Execution cancelled."); return; }
     }
     handleCommand(sql, true);
-  };
+  }, [confirm, handleCommand]);
   
   useEffect(() => {
-      if (location.state?.autoQuery) {
-          const { autoQuery, replaceEditor } = location.state;
-          if (replaceEditor || !currentSQL) {
-              setCurrentSQL(autoQuery);
-          }
-          handleRunSQL(autoQuery);
-          navigate(location.pathname, { replace: true, state: {} });
-      }
-  }, [location.state, navigate, currentSQL]);
+        const { autoQuery, replaceEditor } = location.state || {};
+
+        if (autoQuery && autoQuery !== processedAutoQuery.current) {
+            setCurrentSQL(prevSql => (replaceEditor || !prevSql) ? autoQuery : prevSql);
+            handleRunSQL(autoQuery);
+            setCurrentSQL(autoQuery);
+
+            processedAutoQuery.current = autoQuery;
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.state, navigate, handleRunSQL]);
   
-  const handleSaveQuery = async (sqlToSave) => {
+  const handleSaveQuery = useCallback(async (sqlToSave) => {
     const name = await prompt({ title: "Save Query", message: "Enter a descriptive name for this SQL query.", initialValue: "My Saved Query", confirmText: "Save Query" });
     if (name && sqlToSave) {
       await api.saveQuery(name, sqlToSave);
       toast.success(`Query "${name}" saved!`);
-      queryClient.invalidateQueries(['savedQueries']);
+      queryClient.invalidateQueries({ queryKey: ['savedQueries'] });
     }
-  };
+  }, [prompt, queryClient]);
 
   const loadQueryIntoEditor = async (sqlToLoad) => {
     if (currentSQL && currentSQL.trim() !== sqlToLoad.trim()) {
@@ -127,11 +144,10 @@ const Query = () => {
   return (
     <div className="grid lg:grid-cols-3 gap-4">
       <div className="lg:col-span-2 space-y-4">
-        <NLInput onExecute={handleNLCommand} isLoading={isLoading} />
+        <NLInput onExecute={handleNLCommand} isLoading={isGeneratingSql} />
         {error && <div className="text-red-400 text-sm p-3 bg-red-500/10 rounded-md border border-red-500/20"><strong>Query Error:</strong> {error}</div>}
-        {currentSQL && <SQLDisplay sql={currentSQL} setSql={setCurrentSQL} onExecuteSql={handleRunSQL} selectedDb={selectedDb} onSaveQuery={handleSaveQuery}/>}
+        {currentSQL && <SQLDisplay sql={currentSQL} setSql={setCurrentSQL} onExecuteSql={handleRunSQL} selectedDb={selectedDb} onSaveQuery={handleSaveQuery} isExecuting={isExecutingSql}/>}
         {queryResult && queryResult.data.length > 0 && <DataTable table={queryResult} />}
-        {queryResult && queryResult.data.length === 0 && !error && <EmptyResultsPlaceholder />}
         <ERDiagram mermaidString={mermaidString} onRefresh={() => fetchSchemaAndDiagram(selectedDb)} />
       </div>
       

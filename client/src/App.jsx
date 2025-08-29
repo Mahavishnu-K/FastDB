@@ -21,9 +21,8 @@ import CollaborationPage from './pages/Collaboration';
 import * as api from './services/apiServices';
 
 // --- Lazy-loaded Page Components ---
-const Query = lazy(() => import('./pages/Query'));
+const Query = lazy(() => import('./pages/query'));
 const Schema = lazy(() => import('./pages/Schema'));
-const API = lazy(() => import('./pages/API'));
 const TableEditor = lazy(() => import('./pages/TableEditor'));
 const EditTable = lazy(() => import('./pages/EditTable'));
 const LoginPage = lazy(() => import('./pages/login'));
@@ -72,7 +71,7 @@ function DashboardLayout() {
         actions.push({
             id: `query_table_${table.name}`,
             title: `Query: Show all from "${table.name}"`,
-            onSelect: () => navigate('/query', { state: { autoQuery: `select * from ${table.name}` }})
+            onSelect: () => navigate('/query', { state: { autoQuery: `select * from ${table.name};` }})
         });
     });
 
@@ -81,7 +80,7 @@ function DashboardLayout() {
 
   const handleTableSelect = (table, dbName) => {
     if (dbName && selectedDb !== dbName) handleDbChange(dbName);
-    navigate('/query', { state: { autoQuery: `select * from ${table.name}` } });
+    navigate('/query', { state: { autoQuery: `select * from ${table.name};` } });
   };
   
   // const handleTableDelete = async (tableName) => {
@@ -118,7 +117,7 @@ function DashboardLayout() {
             {!appIsLoading && (
                 <Routes>
                   <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/query" element={<Query key={selectedDb} />} />
+                  <Route path="/query" element={<Query />} />
                   <Route path="/schema" element={<Schema />} />
                   <Route path="/schema/builder" element={<SchemaBuilder />} />
                   <Route path="/saved-queries" element={<SavedQueries />} />

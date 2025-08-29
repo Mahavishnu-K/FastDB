@@ -1,5 +1,5 @@
 # app/api/routes/history.py
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -36,3 +36,16 @@ def create_saved_query(
 ):
     """Saves a query for the currently authenticated user."""
     return history_service.save_query(db, owner=current_user, query=query)
+
+@router.delete("/saved-queries/{query_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["History"])
+def delete_user_saved_query(
+    query_id: int,
+    db: Session = Depends(get_db_session),
+    current_user: User = Depends(get_current_user)
+):
+    """Deletes a saved query for the currently authenticated user."""
+    try:
+        history_service.delete_saved_query(db, owner=current_user, query_id=query_id)
+        return
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

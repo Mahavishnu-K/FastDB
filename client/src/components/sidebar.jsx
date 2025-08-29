@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Database, Table, Eye, ListTree, X, LogOut, ChevronRight, Minus, Loader, Search, AlertTriangle } from 'lucide-react';
+import { Database, Table, X, LogOut, ChevronRight, Minus, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import * as api from '../services/apiServices';
 import ThemeSwitcher from './ThemeSwitcher';
@@ -81,7 +81,6 @@ const Sidebar = ({ isOpen, onToggle, databases, selectedDb, onDbChange, onTableS
                 {/* Header */}
                 <div className="flex items-center justify-between p-3.5 border-b border-border-light dark:border-border-dark">
                     <div className="flex items-center space-x-2">
-                        <Database className="w-4 h-4 text-blue-500" />
                         <span className="text-sm font-semibold">Schema Explorer</span>
                     </div>
                     <button onClick={onToggle} className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800">

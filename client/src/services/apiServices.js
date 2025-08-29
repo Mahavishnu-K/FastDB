@@ -106,6 +106,9 @@ export const saveQuery = async (name, query) => {
     return response.data;
 }
 
+export const deleteSavedQuery = async (queryId) => {
+    await apiClient.delete(`/history/saved-queries/${queryId}`);
+};
 
 export const listDbsSharedByMe = async () => {
   const response = await apiClient.get('/databases/shared-by-me');

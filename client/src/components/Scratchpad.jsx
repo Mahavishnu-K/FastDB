@@ -49,7 +49,7 @@ const Scratchpad = ({ isVisible, onClose }) => {
             <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Jot down notes, temporary queries, etc. Save to persist across sessions."
+                placeholder="Write down notes, temporary queries, etc. Save to persist across sessions."
                 className="flex-1 w-full bg-transparent p-3 text-sm font-mono resize-none focus:outline-none"
                 spellCheck="false"
             />

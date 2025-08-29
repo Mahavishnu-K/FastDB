@@ -1,9 +1,9 @@
-import { BrainCircuit, Check, Code, Copy, Play, Save } from 'lucide-react';
+import { BrainCircuit, Check, Code, Copy, Play, Loader, Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import * as api from '../services/apiServices';
 
-const SQLDisplay = ({ sql, setSql, onExecuteSql, selectedDb, onSaveQuery }) => {
+const SQLDisplay = ({ sql, setSql, onExecuteSql, selectedDb, onSaveQuery, isExecuting }) => {
   const [copied, setCopied] = useState(false);
   const [explainResult, setExplainResult] = useState(null);
   const [isExplaining, setIsExplaining] = useState(false);
@@ -54,8 +54,8 @@ const SQLDisplay = ({ sql, setSql, onExecuteSql, selectedDb, onSaveQuery }) => {
             <Save className="w-4 h-4" />
           </button>
 
-          <button onClick={() => onExecuteSql(sql)} title="Run SQL Query" className="p-2 rounded-md bg-blue-600 text-white hover:bg-blue-500 transition-transform transform hover:scale-105">
-            <Play className="w-4 h-4" />
+          <button onClick={() => onExecuteSql(sql)} disabled={isExecuting} title="Run SQL Query" className="p-2 rounded-md bg-blue-600 text-white hover:bg-blue-500 transition-transform transform hover:scale-105">
+            {isExecuting ? <Loader className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
           </button>
         </div>
       </div>
