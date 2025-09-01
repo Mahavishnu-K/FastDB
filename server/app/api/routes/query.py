@@ -1,8 +1,10 @@
+#api/routes/query.py
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
+import re
 
 from app.schemas.query_schema import NLRequest, NLResponse, ExecuteRequest, QueryResponse, QueryCommand
 from app.core.diagram_generator import generate_schema_as_mermaid
@@ -58,10 +60,6 @@ SQL_KEYWORDS = {
 }
 
 def is_likely_sql(command: str, threshold: float = 0.5) -> bool:
-    """
-    A more robust heuristic to guess if a command is direct SQL.
-    Returns True if it's more likely to be SQL than natural language.
-    """
     command = command.strip()
     if not command:
         return False
@@ -98,192 +96,175 @@ def substitute_params(prompt: str, params: Dict[str, Any]) -> str:
 
 @router.post("/", response_model=QueryResponse, tags=["SDK"])
 async def run_nlp_command(
-    request: QueryCommand, # Use the simple QueryCommand schema
+    request: QueryCommand,
     x_target_database: str = Header(..., alias="X-Target-Database"),
     x_transaction_id: Optional[str] = Header(None, alias="X-Transaction-ID"),
     db_session: Session = Depends(get_db_session),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    The all-in-one endpoint for the SDK.
-    1. Takes a natural language command.
-    2. Converts it to SQL.
-    3. Executes the SQL.
-    4. Returns the result.
-    """
     final_prompt = substitute_params(request.command, request.params)
-    sql_to_execute = ""
+    sql_commands: List[str] = []
+    sql_for_display: str = ""
 
     if is_likely_sql(final_prompt):
-        sql_to_execute = final_prompt
-    else:
-        # For NLP, we need to connect to the target DB to get its schema for context
+        sql_commands = [cmd.strip() for cmd in final_prompt.split(';') if cmd.strip()]
+    else:   
         virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
-        if not virtual_db and x_target_database != "postgres": # Allow NLP context from postgres db
+        if not virtual_db and x_target_database != "postgres":
              raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
         
-        # Connect to the user's DB to get schema for the LLM
         engine = get_engine_for_user_db(virtual_db.physical_name if virtual_db else "postgres")
         schema_context = generate_schema_as_mermaid(engine)
-
         nl_response = await convert_nl_to_sql(x_target_database, final_prompt, schema_context)
         
         if nl_response.get("query_type") == "ERROR":
-            error_msg = nl_response.get("explanation", "Unknown error from NLP engine.")
-            raise HTTPException(status_code=400, detail=f"NLP Error: {error_msg}")
+            raise HTTPException(status_code=400, detail=f"NLP Error: {nl_response.get('explanation', 'Unknown error')}")
         
-        sql_to_execute = nl_response.get("sql")
-    
-    # --- NEW: SPECIAL HANDLING FOR ADMIN COMMANDS ---
-    upper_sql = sql_to_execute.strip().upper()
+        sql_from_nlp = nl_response.get("sql")
+        if isinstance(sql_from_nlp, str):
+            sql_commands = [cmd.strip() for cmd in sql_from_nlp.split(';') if cmd.strip()]
+        elif isinstance(sql_from_nlp, list):
+            sql_commands = [cmd.strip() for cmd in sql_from_nlp if cmd.strip()]
+        
+    if not sql_commands:
+            raise HTTPException(status_code=400, detail="NLP engine did not generate any SQL commands.")
+            
+    sql_for_display = ";\n".join(sql_commands) + ";"
+
     result_dict = {}
 
-    if not (upper_sql.startswith('CREATE DATABASE') or upper_sql.startswith('DROP DATABASE')):
-        virtual_db_for_auth = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
-        if not virtual_db_for_auth:
-             raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
-        
-        user_role = get_user_role_for_db(db_session, user=current_user, virtual_db=virtual_db_for_auth)
-
-        # Check if the command is a "write" operation
-        is_write_operation = any(upper_sql.startswith(keyword) for keyword in ['INSERT', 'UPDATE', 'DELETE', 'CREATE TABLE', 'DROP TABLE', 'ALTER TABLE', 'TRUNCATE'])
-        
-        if is_write_operation and not user_has_at_least_role(user_role, DBRole.editor):
-            raise HTTPException(
-                status_code=403,
-                detail="Permission denied: You need 'Editor' or 'Owner' role to modify this database."
-            )
-
     try:
-        if upper_sql.startswith('CREATE DATABASE'):
-            # This is an admin command. Use the superuser engine.
-            print("INFO: CREATE DATABASE command detected. Using superuser engine.")
-            new_virtual_name = sql_to_execute.split()[2].strip(';"')
+        # --- NEW LOGIC: Special handling for 'CREATE DATABASE' followed by other commands ---
+        if sql_commands and sql_commands[0].strip().upper().startswith('CREATE DATABASE'):
+            # 1. Isolate the CREATE DATABASE command
+            create_db_command = sql_commands.pop(0) # Remove it from the list
+            new_virtual_name = create_db_command.split()[2].strip(';"')
             
+            # 2. Execute the CREATE DATABASE logic (same as before)
+            print(f"INFO: Executing CREATE DATABASE for '{new_virtual_name}'.")
             if vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=new_virtual_name):
                 raise HTTPException(status_code=409, detail=f"You already have a database named '{new_virtual_name}'.")
-
-            # 2. Create a validated Pydantic model instance.
-            #    This will raise a 422 error if the name is invalid (e.g., "my-db!").
             try:
                 db_in = VirtualDatabaseCreate(virtual_name=new_virtual_name)
             except Exception as e:
                 raise HTTPException(status_code=422, detail=f"Invalid database name: {e}")
+            
+            # This creates the physical DB and the metadata record
+            new_virtual_db = vdb_service.create_virtual_database(db_session, owner=current_user, db_in=db_in)
+            
+            # 3. If there are more commands, execute them against the NEW database
+            if sql_commands:
+                print(f"INFO: Populating newly created database '{new_virtual_name}'.")
+                # Get a new engine specifically for the database we just created
+                engine = get_engine_for_user_db(new_virtual_db.physical_name)
+                last_result_dict = {}
+                with engine.connect() as connection:
+                    with connection.begin(): # Transaction for all subsequent commands
+                        for command in sql_commands:
+                            last_result_dict = execute_sql(connection, command)
+                            if not last_result_dict.get("success"):
+                                raise Exception(f"Failed to populate database: {last_result_dict.get('message')}")
+                
+                result_dict = last_result_dict
+                result_dict["message"] = f"Database '{new_virtual_name}' created and populated successfully."
+            else:
+                # No more commands, just report success for creation
+                result_dict = {"success": True, "message": f"Database '{new_virtual_name}' created successfully."}
+        
+        # --- MODIFIED: Handle other admin commands (DROP, ALTER) which must be solitary ---
+        elif sql_commands and any(cmd.strip().upper().startswith(('DROP DATABASE', 'ALTER DATABASE')) for cmd in sql_commands):
+            if len(sql_commands) > 1:
+                raise HTTPException(status_code=400, detail="Administrative commands (DROP/ALTER DATABASE) cannot be mixed with other queries.")
+            
+            single_command = sql_commands[0]
+            upper_sql = single_command.strip().upper()
 
-            # 3. Call the service with the validated Pydantic object.
-            vdb_service.create_virtual_database(db_session, owner=current_user, db_in=db_in)
-            result_dict = {"success": True, "message": f"Database '{new_virtual_name}' created successfully."}
+            if upper_sql.startswith('DROP DATABASE'):
+                # ... (DROP DATABASE logic is unchanged)
+                print("INFO: DROP DATABASE command detected. Using superuser engine.")
+                virtual_name_to_drop = single_command.split()[2].strip(';"')
+                db_to_drop = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=virtual_name_to_drop)
+                if not db_to_drop: raise HTTPException(status_code=404, detail=f"Database '{virtual_name_to_drop}' not found.")
+                if db_to_drop.user_id != current_user.user_id: raise HTTPException(status_code=403, detail="Permission denied: Only the database owner can drop a database.")
+                vdb_service.delete_virtual_database(db_session, db_to_drop=db_to_drop)
+                result_dict = {"success": True, "message": f"Database '{virtual_name_to_drop}' dropped successfully."}
 
-        elif upper_sql.startswith('DROP DATABASE'):
-            # This is an admin command. Use the superuser engine.
-            print("INFO: DROP DATABASE command detected. Using superuser engine.")
-            virtual_name_to_drop = sql_to_execute.split()[2].strip(';"')
-            
-            # Look up the physical name to drop it
-            db_to_drop = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=virtual_name_to_drop)
-            if not db_to_drop:
-                raise HTTPException(status_code=404, detail=f"Database '{virtual_name_to_drop}' not found for your account.")
-            
-            if db_to_drop.user_id != current_user.user_id:
-                raise HTTPException(
-                    status_code=403,
-                    detail="Permission denied: Only the database owner can drop a database."
-                )
-            
-            # Use the service to delete the physical DB and metadata (we'll create this service)
-            vdb_service.delete_virtual_database(db_session, db_to_drop=db_to_drop)
-            result_dict = {"success": True, "message": f"Database '{virtual_name_to_drop}' dropped successfully."}
-
-        elif upper_sql.startswith('ALTER DATABASE'):
-            print("INFO: ALTER DATABASE command detected. Handling rename.")
-            
-            # Use regex to safely parse the old and new names from the SQL
-            import re
-            match = re.search(r'ALTER DATABASE\s+([\w_]+)\s+RENAME TO\s+([\w_]+);?', sql_to_execute.strip(), re.IGNORECASE)
-            if not match:
-                raise HTTPException(status_code=400, detail="Could not parse RENAME DATABASE command.")
-            
-            old_name, new_name = match.groups()
-            
-            try:
-                # Call the new, secure service function
-                vdb_service.rename_virtual_database(db_session, owner=current_user, old_virtual_name=old_name, new_virtual_name=new_name)
-                result_dict = {"success": True, "message": f"Database '{old_name}' renamed to '{new_name}' successfully."}
-            except (PermissionError, ValueError) as e:
-                raise HTTPException(status_code=400, detail=str(e))
-            except Exception as e:
-                 raise HTTPException(status_code=500, detail=f"Failed to rename database: {e}")
-
+            elif upper_sql.startswith('ALTER DATABASE'):
+                # ... (ALTER DATABASE logic is unchanged)
+                print("INFO: ALTER DATABASE command detected. Handling rename.")
+                match = re.search(r'ALTER DATABASE\s+([\w_]+)\s+RENAME TO\s+([\w_]+);?', single_command.strip(), re.IGNORECASE)
+                if not match: raise HTTPException(status_code=400, detail="Could not parse RENAME DATABASE command.")
+                old_name, new_name = match.groups()
+                try:
+                    vdb_service.rename_virtual_database(db_session, owner=current_user, old_virtual_name=old_name, new_virtual_name=new_name)
+                    result_dict = {"success": True, "message": f"Database '{old_name}' renamed to '{new_name}' successfully."}
+                except (PermissionError, ValueError) as e:
+                    raise HTTPException(status_code=400, detail=str(e))
         else:
-            # --- STANDARD LOGIC FOR ALL OTHER QUERIES (SELECT, INSERT, etc.) ---
-            # Look up the physical DB name for the target of the query
+            # --- STANDARD LOGIC for all other queries (SELECT, INSERT, etc.) ---
+            # ... (This block is now for queries on EXISTING databases and is unchanged)
+            if not sql_commands:
+                 raise HTTPException(status_code=400, detail="No SQL command to execute.")
+
             virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
             if not virtual_db:
                 raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found for your account.")
             
+            user_role = get_user_role_for_db(db_session, user=current_user, virtual_db=virtual_db)
+            is_write_operation = any(
+                any(cmd.strip().upper().startswith(keyword) for keyword in ['INSERT', 'UPDATE', 'DELETE', 'CREATE TABLE', 'DROP TABLE', 'ALTER TABLE', 'TRUNCATE'])
+                for cmd in sql_commands
+            )
+            if is_write_operation and not user_has_at_least_role(user_role, DBRole.editor):
+                raise HTTPException(status_code=403, detail="Permission denied: You need 'Editor' or 'Owner' role to modify this database.")
+
+            last_result_dict = {}
             if x_transaction_id:
-                # --- TRANSACTIONAL PATH ---
-                print(f"DEBUG: Executing in transaction {x_transaction_id}")
                 connection = transaction_manager.get_transaction_connection(x_transaction_id)
-                if not connection:
-                    raise HTTPException(status_code=404, detail=f"Transaction '{x_transaction_id}' not found or has expired.")
-                
-                result_dict = execute_sql(connection, sql_to_execute)
+                if not connection: raise HTTPException(status_code=404, detail=f"Transaction '{x_transaction_id}' not found or has expired.")
+                for command in sql_commands:
+                    last_result_dict = execute_sql(connection, command)
+                    if not last_result_dict.get("success"): raise Exception(last_result_dict.get("message", "A command in the transaction failed."))
+                result_dict = last_result_dict
             else:
-                # --- AUTO-COMMIT PATH ---
-                print("DEBUG: Executing in auto-commit mode (no transaction ID)")
                 engine = get_engine_for_user_db(virtual_db.physical_name)
                 with engine.connect() as connection:
-                    with connection.begin(): # This handles BEGIN/COMMIT/ROLLBACK for a single statement
-                        result_dict = execute_sql(connection, sql_to_execute)
+                    with connection.begin():
+                        for command in sql_commands:
+                            last_result_dict = execute_sql(connection, command)
+                            if not last_result_dict.get("success"): raise Exception(last_result_dict.get("message", "A command in the sequence failed."))
+                result_dict = last_result_dict
 
     except Exception as e:
-        # Log the failed query
-        history_service.log_query_history(
-            db=db_session, owner=current_user, command=request.command, sql=sql_to_execute, status="error"
-        )
+        history_service.log_query_history(db=db_session, owner=current_user, command=request.command, sql=sql_for_display, status="error")
+        if isinstance(e, HTTPException): raise e
         raise HTTPException(status_code=400, detail=f"SQL Execution Error: {e}")
 
     if not result_dict.get("success"):
-        history_service.log_query_history(
-            db=db_session, owner=current_user, command=final_prompt, sql=sql_to_execute, status="error"
-        )
-        # Raise a 400 Bad Request with the specific error message from the database.
+        history_service.log_query_history(db=db_session, owner=current_user, command=final_prompt, sql=sql_for_display, status="error")
         raise HTTPException(status_code=400, detail=result_dict.get("message", "SQL execution failed."))
     
-    # --- Step 3: Log success and format the response ---
-    history_service.log_query_history(
-        db=db_session, owner=current_user, command=final_prompt, sql=sql_to_execute, status="success"
-    )
+    history_service.log_query_history(db=db_session, owner=current_user, command=final_prompt, sql=sql_for_display, status="success")
 
-    # Transform data for frontend/SDK compatibility if necessary
     response_data = result_dict.get("data")
-    final_result_data = None # Start with a clean slate
-
+    final_result_data = None 
     if response_data and "columns" in response_data and "rows" in response_data:
-        # This check is robust. It works even if `rows` is an empty list.
         columns = response_data["columns"]
         rows = response_data["rows"]
-        
-        # This transformation always works, producing `[]` if `rows` is empty.
         formatted_data = [dict(zip(columns, row)) for row in rows]
-        
-        # This creates a NEW dictionary that PERFECTLY matches your QueryResultData schema.
         final_result_data = {"columns": columns, "data": formatted_data}
     
-    # This response must match your SDK's QueryResponse model
     return QueryResponse(
         success=True, 
         message=result_dict.get("message", "Command executed successfully."),
-        generated_sql=sql_to_execute, 
+        generated_sql=sql_for_display,
         result=final_result_data
     )
 
-# The /nl endpoint is correct and does not need changes.
+# The /nl endpoint remains unchanged and is correct
 @router.post("/nl", response_model=NLResponse, tags=["Query"])
 async def process_nl_query(
     request: NLRequest,
-    # --- ADD THE CORRECT DEPENDENCIES ---
     x_target_database: str = Header(..., alias="X-Target-Database"),
     db_session: Session = Depends(get_db_session),
     current_user: User = Depends(get_current_user)
@@ -292,36 +273,19 @@ async def process_nl_query(
     Converts a natural language command to SQL for a specific user's database
     without executing it. This is a secure, multi-tenant version.
     """
-    # 1. Look up the user's virtual database to find the physical name.
-    virtual_db = vdb_service.get_accessible_database(
-        db_session, 
-        user=current_user, 
-        virtual_name=x_target_database
-    )
+    virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
     if not virtual_db:
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Database '{x_target_database}' not found for your account."
-        )
+        raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found for your account.")
     
-    # 2. Get the engine for the user's specific physical database.
     try:
         engine = get_engine_for_user_db(virtual_db.physical_name)
     except Exception as e:
-        raise HTTPException(
-            status_code=503, 
-            detail=f"Could not connect to database '{x_target_database}': {e}"
-        )
+        raise HTTPException(status_code=503, detail=f"Could not connect to database '{x_target_database}': {e}")
 
-    # 3. The rest of the logic is the same, but now it uses the correct, secure engine.
     schema_context = generate_schema_as_mermaid(engine)
-    structured_response = await convert_nl_to_sql(request.command, schema_context)
+    structured_response = await convert_nl_to_sql(x_target_database, request.command, schema_context)
     
     if structured_response.get("query_type") == "ERROR":
-        # It's better to use a 400 Bad Request for user errors
-        raise HTTPException(
-            status_code=400, 
-            detail=structured_response.get("explanation", "Failed to process NLP command.")
-        )
+        raise HTTPException(status_code=400, detail=structured_response.get("explanation", "Failed to process NLP command."))
         
     return structured_response

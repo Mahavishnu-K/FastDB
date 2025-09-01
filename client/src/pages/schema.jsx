@@ -1,4 +1,4 @@
-import { ChevronsRight, Database, Edit, GitPullRequest, Loader, Plus, Trash2, ListTree, Eye, MessageSquare, X, FileCode } from 'lucide-react';
+import { ChevronsRight, Database, Edit, Table, GitPullRequest, Loader, Plus, Trash2, ListTree, Eye, MessageSquare, X, FileCode } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as api from '../services/apiServices';
@@ -73,19 +73,19 @@ const SchemaDiffModal = ({ databases, selectedDb, onClose }) => {
                     {/* UI Content for the modal */}
                     {mode === 'database' ? (
                         <div className="flex items-end space-x-2">
-                            <div className="flex-1"><label className="text-xs">Source DB</label><select value={dbSource} onChange={e => setDbSource(e.target.value)} className="w-full text-sm p-2 rounded-md border border-border-light dark:border-border-dark mt-1"><option value="">Select</option>{databases.map(db => <option key={db.id} value={db.virtual_name}>{db.virtual_name}</option>)}</select></div>
+                            <div className="flex-1"><label className="text-xs">Source DB</label><select value={dbSource} onChange={e => setDbSource(e.target.value)} className="w-full text-sm p-2 rounded-md border bg-fg-light dark:bg-fg-dark border-border-light dark:border-border-dark mt-1"><option value="">Select</option>{databases.map(db => <option key={db.id} value={db.virtual_name}>{db.virtual_name}</option>)}</select></div>
                             <ChevronsRight className="w-6 h-6 mb-2"/>
-                            <div className="flex-1"><label className="text-xs">Target DB</label><select value={dbTarget} onChange={e => setDbTarget(e.target.value)} className="w-full text-sm p-2 rounded-md border border-border-light dark:border-border-dark mt-1"><option value="">Select</option>{databases.map(db => <option key={db.id} value={db.virtual_name}>{db.virtual_name}</option>)}</select></div>
+                            <div className="flex-1"><label className="text-xs">Target DB</label><select value={dbTarget} onChange={e => setDbTarget(e.target.value)} className="w-full text-sm p-2 rounded-md border bg-fg-light dark:bg-fg-dark border-border-light dark:border-border-dark mt-1"><option value="">Select</option>{databases.map(db => <option key={db.id} value={db.virtual_name}>{db.virtual_name}</option>)}</select></div>
                         </div>
                     ) : (
                          <div className="space-y-3">
                             <div className="flex items-end space-x-2">
-                                <div className="flex-1"><label className="text-xs">Source</label><select value={tblSourceDb} onChange={e => setTblSourceDb(e.target.value)} className="w-full text-sm p-2 rounded-md border border-border-light dark:border-border-dark mt-1">{databases.map(db => <option key={db.id} value={db.virtual_name}>{db.virtual_name}</option>)}</select></div>
-                                <div className="flex-1"><label className="text-xs">&nbsp;</label><select value={tblSource} onChange={e => setTblSource(e.target.value)} className="w-full text-sm p-2 rounded-md border border-border-light dark:border-border-dark mt-1"><option value="">Select Table</option>{sourceTables.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
+                                <div className="flex-1"><label className="text-xs">Source</label><select value={tblSourceDb} onChange={e => setTblSourceDb(e.target.value)} className="w-full text-sm p-2 rounded-md border bg-fg-light dark:bg-fg-dark border-border-light dark:border-border-dark mt-1">{databases.map(db => <option key={db.id} value={db.virtual_name}>{db.virtual_name}</option>)}</select></div>
+                                <div className="flex-1"><label className="text-xs">&nbsp;</label><select value={tblSource} onChange={e => setTblSource(e.target.value)} className="w-full text-sm p-2 rounded-md border bg-fg-light dark:bg-fg-dark border-border-light dark:border-border-dark mt-1"><option value="">Select Table</option>{sourceTables.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
                             </div>
                             <div className="flex items-end space-x-2">
-                                <div className="flex-1"><label className="text-xs">Target</label><select value={tblTargetDb} onChange={e => setTblTargetDb(e.target.value)} className="w-full text-sm p-2 rounded-md border border-border-light dark:border-border-dark mt-1">{databases.map(db => <option key={db.id} value={db.virtual_name}>{db.virtual_name}</option>)}</select></div>
-                                <div className="flex-1"><label className="text-xs">&nbsp;</label><select value={tblTarget} onChange={e => setTblTarget(e.target.value)} className="w-full text-sm p-2 rounded-md border border-border-light dark:border-border-dark mt-1"><option value="">Select Table</option>{targetTables.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
+                                <div className="flex-1"><label className="text-xs">Target</label><select value={tblTargetDb} onChange={e => setTblTargetDb(e.target.value)} className="w-full text-sm p-2 rounded-md border bg-fg-light dark:bg-fg-dark border-border-light dark:border-border-dark mt-1">{databases.map(db => <option key={db.id} value={db.virtual_name}>{db.virtual_name}</option>)}</select></div>
+                                <div className="flex-1"><label className="text-xs">&nbsp;</label><select value={tblTarget} onChange={e => setTblTarget(e.target.value)} className="w-full text-sm p-2 rounded-md border bg-fg-light dark:bg-fg-dark border-border-light dark:border-border-dark mt-1"><option value="">Select Table</option>{targetTables.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
                             </div>
                             <div className="flex items-center space-x-4 pt-2">
                                 <label className="flex items-center space-x-2 text-sm"><input type="checkbox" checked={compareTypes.has('schema')} onChange={() => handleCompareTypeChange('schema')} className="rounded"/><span>Compare Schema</span></label>
@@ -376,7 +376,7 @@ const SchemaPage = () => {
                 previewData && (
                     <div className="h-[50vh] flex flex-col">
                         <div className="flex items-center justify-between p-3 border border-border-light dark:border-border-dark bg-fg-light dark:bg-fg-dark rounded-lg mb-4">
-                             <h3 className="font-semibold text-sm text-text-light dark:text-text-dark">
+                            <h3 className="font-semibold text-sm text-text-light dark:text-text-dark">
                                 Preview: <span className="font-medium text-blue-500">{previewTableName}</span>
                             </h3>
                             <button onClick={() => setPreviewData(null)} className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800">
@@ -388,7 +388,14 @@ const SchemaPage = () => {
                           but since we cannot modify the DataTable component, this is a visual compromise.
                           The best approach is a wrapper with a header.
                         */}
-                        <DataTable table={{ data: previewData }} title={`Top 100 Rows`} />
+                        {previewData.length > 0 ? (
+                          <DataTable table={{ data: previewData }} title={`Top 100 Rows`} />
+                        ) : (
+                          <div className="flex items-center justify-center gap-2 text-text-muted-light dark:text-text-muted-dark h-full">
+                            <Table className="w-4 h-4" />
+                            <span>No Table data</span>
+                          </div>
+                        )}
                     </div>
                 )
             )}

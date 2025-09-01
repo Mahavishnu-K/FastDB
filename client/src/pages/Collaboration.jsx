@@ -1,4 +1,4 @@
-import { ChevronRight, ChevronDown, ChevronUp, Crown, Database, Edit3, Eye, User, GitMerge, Loader, Cable, Mail, Send, Waypoints, Settings2, Share2, Trash2, UserPlus, X } from 'lucide-react';
+import { ChevronRight, ChevronDown, Database, Eye, User, GitMerge, Loader, Mail, Send, Waypoints, Settings2, Share2, UserPlus, X } from 'lucide-react';
 import { useCallback, useEffect,useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useConfirm } from '../contexts/ConfirmationContext';
@@ -445,9 +445,9 @@ const MyDatabases = ({ onShareSuccess }) => {
     }
     
     return (
-        <div className="space-y-2">
+        <div className="space-y-2 h-72 overflow-y-auto pr-2">
             {myDbs.map(db => (
-                <div key={db.id} className="bg-bg-light dark:bg-bg-dark border border-border-light dark:border-border-dark rounded-md p-4 flex items-center justify-between">
+                <div key={db.id} className="bg-bg-light dark:bg-bg-dark border border-border-light dark:border-border-dark rounded-md p-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Database className="w-5 h-5 text-text-muted-light dark:text-text-muted-dark"/>
                         <span className="font-medium text-text-light dark:text-text-dark">{db.virtual_name}</span>

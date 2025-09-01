@@ -1,4 +1,4 @@
-import { Key, Plus, Save, Trash2 } from 'lucide-react';
+import { Plus, Save, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useConfirm } from '../contexts/ConfirmationContext';
@@ -164,7 +164,7 @@ const TableEditor = ({ onSaveSuccess, onCancel }) => {
                                 <div className="md:col-span-4 flex items-center space-x-4">
                                     <label className="flex items-center space-x-2 text-sm cursor-pointer">
                                         <input type="checkbox" checked={column.primaryKey} onChange={(e) => updateColumn(index, 'primaryKey', e.target.checked)} className="rounded text-blue-500 focus:ring-blue-500/50 bg-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600"/>
-                                        <span className="flex items-center space-x-1 text-xs"><Key className="w-3 h-3 text-yellow-500" /><span>PK</span></span>
+                                        <span className="flex items-center space-x-1 text-xs"><span>PK</span></span>
                                     </label>
                                     <label className="flex items-center space-x-2 text-sm cursor-pointer">
                                         <input type="checkbox" checked={!column.nullable} onChange={(e) => updateColumn(index, 'nullable', !e.target.checked)} disabled={column.primaryKey} className="rounded text-blue-500 focus:ring-blue-500/50 bg-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600 disabled:opacity-50"/>

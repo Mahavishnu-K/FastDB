@@ -85,7 +85,7 @@ const SchemaInsightsWidget = () => {
     }, [schema]);
 
     return (
-        <div className="bg-fg-light dark:bg-fg-dark border border-border-light dark:border-border-dark rounded-lg p-4 flex flex-col max-h-56 overflow-y-auto">
+        <div className="bg-fg-light dark:bg-fg-dark border border-border-light dark:border-border-dark rounded-lg p-4 flex flex-col h-52 max-h-52 overflow-y-auto">
             <h3 className="text-sm font-semibold flex items-center gap-2 mb-3 text-text-light dark:text-text-dark"><Zap className="w-4 h-4 text-blue-500"/>Schema Insights</h3>
             <div className="space-y-2 flex-1 overflow-y-auto pr-1">
                 {insights.length > 0 ? insights.map(insight => (
