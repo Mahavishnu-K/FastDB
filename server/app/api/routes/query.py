@@ -17,11 +17,13 @@ from app.db.engine import get_engine_for_user_db
 from app.services import virtual_database_service as vdb_service
 from app.schemas.virtual_database_schema import VirtualDatabaseCreate
 
-from app.services import history_service
+from app.services import history_service, template_cache_service
 from app.core.nlp_engine import convert_nl_to_sql
 from app.core import transaction_manager
 from app.core.authorization import get_user_role_for_db, user_has_at_least_role
 from app.models.database_collab_model import DBRole
+
+from app.utils.caching_utils import deconstruct_sql, normalize_prompt_template
 
 router = APIRouter()
 
@@ -102,32 +104,77 @@ async def run_nlp_command(
     db_session: Session = Depends(get_db_session),
     current_user: User = Depends(get_current_user)
 ):
-    final_prompt = substitute_params(request.command, request.params)
+    prompt_template = request.command
+    params = request.params or {}
+    
     sql_commands: List[str] = []
-    sql_for_display: str = ""
+    execution_params: Dict[str, Any] = {}
+    is_from_cache = False
+    
+    final_prompt = substitute_params(prompt_template, params)
 
-    if is_likely_sql(final_prompt):
-        sql_commands = [cmd.strip() for cmd in final_prompt.split(';') if cmd.strip()]
-    else:   
-        virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
-        if not virtual_db and x_target_database != "postgres":
-             raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
+    if is_likely_sql(prompt_template):
+        sql_commands = [cmd.strip() for cmd in substitute_params(prompt_template, params).split(';') if cmd.strip()]
+    else:
+        # This is a Natural Language Query, so we check our caches first.
+        if params:
+            # --- TIER 1: TEMPLATE CACHE (for parameterized queries) ---
+            cached_template, original_param_names = template_cache_service.find_template_in_cache(
+                db_session, user=current_user, prompt_template=prompt_template
+            )
+            if cached_template:
+                print(f"INFO: Normalized Template Cache HIT for user '{current_user.email}'.")
+                is_from_cache = True
+                sql_template = cached_template.sql_template
+                try:
+                    execution_params = {
+                        f"param_{i}": params[original_name] 
+                        for i, original_name in enumerate(original_param_names)
+                    }
+                    sql_commands = [sql_template]
+                except KeyError as e:
+                    raise HTTPException(status_code=400, detail=f"Cache error: Missing required parameter '{e}' in your request.")
+        else:
+            # --- TIER 2: HISTORY CACHE (for static, non-parameterized queries) ---
+            cached_history = history_service.find_in_history(db_session, owner=current_user, command=prompt_template)
+            if cached_history:
+                print(f"INFO: Static History Cache HIT for user '{current_user.email}'.")
+                is_from_cache = True
+                sql_from_cache = cached_history.generated_sql
+                sql_commands = [cmd.strip() for cmd in sql_from_cache.split(';') if cmd.strip()]
         
-        engine = get_engine_for_user_db(virtual_db.physical_name if virtual_db else "postgres")
-        schema_context = generate_schema_as_mermaid(engine)
-        nl_response = await convert_nl_to_sql(x_target_database, final_prompt, schema_context)
-        
-        if nl_response.get("query_type") == "ERROR":
-            raise HTTPException(status_code=400, detail=f"NLP Error: {nl_response.get('explanation', 'Unknown error')}")
-        
-        sql_from_nlp = nl_response.get("sql")
-        if isinstance(sql_from_nlp, str):
-            sql_commands = [cmd.strip() for cmd in sql_from_nlp.split(';') if cmd.strip()]
-        elif isinstance(sql_from_nlp, list):
-            sql_commands = [cmd.strip() for cmd in sql_from_nlp if cmd.strip()]
-        
+        if not is_from_cache:
+            # --- CACHE MISS ---
+            print(f"INFO: Cache MISS for user '{current_user.email}'. Routing to NLP engine.")
+            virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
+            if not virtual_db:
+                 raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found.")
+            
+            engine = get_engine_for_user_db(virtual_db.physical_name)
+            schema_context = generate_schema_as_mermaid(engine)
+            nl_response = await convert_nl_to_sql(x_target_database, final_prompt, schema_context)
+            
+            if nl_response.get("query_type") == "ERROR":
+                raise HTTPException(status_code=400, detail=f"NLP Error: {nl_response.get('explanation', 'Unknown error')}")
+            
+            sql_from_llm = nl_response.get("sql")
+            
+            # Save to the template cache if it was a parameterized query
+            if params:
+                _, original_param_names_in_order = normalize_prompt_template(prompt_template)
+                sql_template, param_map = deconstruct_sql(nl_response, params, original_param_names_in_order)
+                template_cache_service.save_template_to_cache(
+                    db_session, user=current_user, prompt_template=prompt_template,
+                    sql_template=sql_template, param_map=param_map
+                )
+
+            if isinstance(sql_from_llm, str):
+                sql_commands = [cmd.strip() for cmd in sql_from_llm.split(';') if cmd.strip()]
+            elif isinstance(sql_from_llm, list):
+                sql_commands = [cmd.strip() for cmd in sql_from_llm if cmd.strip()]
+            
     if not sql_commands:
-            raise HTTPException(status_code=400, detail="NLP engine did not generate any SQL commands.")
+        raise HTTPException(status_code=400, detail="No SQL command to execute.")
             
     sql_for_display = ";\n".join(sql_commands) + ";"
 
@@ -202,7 +249,6 @@ async def run_nlp_command(
                     raise HTTPException(status_code=400, detail=str(e))
         else:
             # --- STANDARD LOGIC for all other queries (SELECT, INSERT, etc.) ---
-            # ... (This block is now for queries on EXISTING databases and is unchanged)
             if not sql_commands:
                  raise HTTPException(status_code=400, detail="No SQL command to execute.")
 
@@ -222,29 +268,36 @@ async def run_nlp_command(
             if x_transaction_id:
                 connection = transaction_manager.get_transaction_connection(x_transaction_id)
                 if not connection: raise HTTPException(status_code=404, detail=f"Transaction '{x_transaction_id}' not found or has expired.")
-                for command in sql_commands:
-                    last_result_dict = execute_sql(connection, command)
-                    if not last_result_dict.get("success"): raise Exception(last_result_dict.get("message", "A command in the transaction failed."))
+                
+                if is_from_cache and params:
+                    last_result_dict = execute_sql(connection, sql_commands[0], params=execution_params)
+                else:
+                    for command in sql_commands:
+                        last_result_dict = execute_sql(connection, command)
+                if not last_result_dict.get("success"): raise Exception(last_result_dict.get("message", "A command in the transaction failed."))
                 result_dict = last_result_dict
             else:
                 engine = get_engine_for_user_db(virtual_db.physical_name)
                 with engine.connect() as connection:
                     with connection.begin():
-                        for command in sql_commands:
-                            last_result_dict = execute_sql(connection, command)
-                            if not last_result_dict.get("success"): raise Exception(last_result_dict.get("message", "A command in the sequence failed."))
+                        if is_from_cache and params:
+                            last_result_dict = execute_sql(connection, sql_commands[0], params=execution_params)
+                        else:
+                            for command in sql_commands:
+                                last_result_dict = execute_sql(connection, command)
+                        if not last_result_dict.get("success"): raise Exception(last_result_dict.get("message", "A command in the sequence failed."))
                 result_dict = last_result_dict
 
     except Exception as e:
-        history_service.log_query_history(db=db_session, owner=current_user, command=request.command, sql=sql_for_display, status="error")
+        if not params: history_service.log_query_history(db=db_session, owner=current_user, command=request.command, sql=sql_for_display, status="error")
         if isinstance(e, HTTPException): raise e
         raise HTTPException(status_code=400, detail=f"SQL Execution Error: {e}")
 
-    if not result_dict.get("success"):
+    if not result_dict.get("success") and not params:
         history_service.log_query_history(db=db_session, owner=current_user, command=final_prompt, sql=sql_for_display, status="error")
         raise HTTPException(status_code=400, detail=result_dict.get("message", "SQL execution failed."))
     
-    history_service.log_query_history(db=db_session, owner=current_user, command=final_prompt, sql=sql_for_display, status="success")
+    if not params: history_service.log_query_history(db=db_session, owner=current_user, command=final_prompt, sql=sql_for_display, status="success")
 
     response_data = result_dict.get("data")
     final_result_data = None 

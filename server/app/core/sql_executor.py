@@ -1,8 +1,9 @@
 from sqlalchemy.engine import Connection
 from sqlalchemy import text, inspect
 from sqlalchemy.exc import SQLAlchemyError, DBAPIError
+from typing import Dict, List, Tuple, Union
 
-def execute_sql(connection: Connection, sql: str, params: dict = None):
+def execute_sql(connection: Connection, sql: str, params: Union[Dict, List, Tuple] = None ):
     """
     Executes a given SQL query with parameters and returns a structured result.
     This version has robust error handling for all exception types.
@@ -28,13 +29,9 @@ def execute_sql(connection: Connection, sql: str, params: dict = None):
             return {"success": True, "message": message, "rowcount": result_proxy.rowcount}
 
     except (SQLAlchemyError, DBAPIError) as e:
-        # --- THE FIX IS HERE ---
-        # We now safely convert ANY exception 'e' to a string.
-        # This will never crash, regardless of the exception type.
+        
         error_message = str(e)
         
-        # A common pattern is that the actual error is in the 'orig' attribute, if it exists.
-        # This is a safer way to check for it.
         if hasattr(e, 'orig') and e.orig:
             # Get the specific error message from the database driver
             error_message = str(e.orig).strip()

@@ -53,6 +53,7 @@ from app.models.history_model import QueryHistory
 from app.models.saved_query_model import SavedQuery
 from app.models.user_model import User
 from app.models.virtual_database_model import VirtualDatabase
+from app.models.query_template_model import QueryTemplate
 
 # Set the target_metadata to your Base's metadata
 target_metadata = Base.metadata

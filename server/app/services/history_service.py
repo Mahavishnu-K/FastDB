@@ -38,6 +38,17 @@ def log_query_history(db: Session, *, owner: User, command: str, sql: str, statu
     db.refresh(db_history)
     return db_history
 
+def find_in_history(db: Session, *, owner: User, command: str) -> QueryHistory | None:
+    """
+    Looks for a recent, successful execution of an identical command text for a user.
+    This acts as a cache to avoid unnecessary LLM calls.
+    """
+    return db.query(QueryHistory).filter(
+        QueryHistory.user_id == owner.user_id,
+        QueryHistory.command_text == command,
+        QueryHistory.status == 'success' 
+    ).order_by(QueryHistory.executed_at.desc()).first()
+
 def get_saved_queries(db: Session, *, owner: User):
     """Gets the saved queries ONLY for the specified owner."""
     return db.query(SavedQuery).filter(SavedQuery.user_id == owner.user_id).order_by(SavedQuery.name).all()
