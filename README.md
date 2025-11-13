@@ -112,10 +112,6 @@ The API will be available at `http://localhost:8000`, with interactive documenta
 
 Contributions are welcome! If you'd like to help improve fastDB, please feel free to fork the repository, make your changes, and submit a pull request. For major changes, please open an issue first to discuss what you would like to change.
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## 👨‍💻 Author
 
 **Mahavishnu K** - [Portfolio](https://mahavishnu-k.vercel.app/)
