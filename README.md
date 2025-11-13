@@ -1,7 +1,7 @@
 # FastDB - The Conversational Cloud Database
 
 <p align="center">
-<img src="https://github.com/Mahavishnu-K/FastDB/blob/main/client/public/FastDB.png" alt="FastDB" width="auto"/>
+<img src="https://github.com/Mahavishnu-K/FastDB/blob/main/client/public/FastDB.png" alt="FastDB" height="500" width="auto"/>
 </p>
 
 <p align="center">
