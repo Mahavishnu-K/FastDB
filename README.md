@@ -16,7 +16,7 @@
 
 FastDB is a full-stack, AI-powered database platform that revolutionizes how developers and teams interact with data. It combines the power and reliability of PostgreSQL with a state-of-the-art, self-hosted LLM, allowing you to manage and query your data through a simple, conversational interface.
 
-This repository contains the central backend API server. The complete fastDB ecosystem includes a web console, developer SDKs, and a CLI.
+This repository contains the central backend API server. The complete FastDB ecosystem includes a web console, developer SDKs, and a CLI.
 
 ## ✨ The FastDB Ecosystem
 
