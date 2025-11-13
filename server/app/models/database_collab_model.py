@@ -14,8 +14,8 @@ class DatabaseMember(Base):
     __tablename__ = "fastdb_database_members"
 
     # We don't need a separate ID, a composite primary key is perfect here
-    user_id = Column(String(32), ForeignKey("fastdb_users.user_id"), primary_key=True)
-    database_id = Column(String(32), ForeignKey("fastdb_virtual_databases.id"), primary_key=True)
+    user_id = Column(String(32), ForeignKey("fastdb_users.user_id", ondelete="CASCADE"), primary_key=True)
+    database_id = Column(String(32), ForeignKey("fastdb_virtual_databases.id", ondelete="CASCADE"), primary_key=True)
     
     role = Column(Enum(DBRole), nullable=False, default=DBRole.editor)
 

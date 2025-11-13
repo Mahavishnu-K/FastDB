@@ -12,7 +12,7 @@ class VirtualDatabase(Base):
     __tablename__ = "fastdb_virtual_databases"
 
     id = Column(String(32), primary_key=True, default=generate_uuid_hex)
-    user_id = Column(String(32), ForeignKey("fastdb_users.user_id"), nullable=False, index=True)
+    user_id = Column(String(32), ForeignKey("fastdb_users.user_id", ondelete="CASCADE"), nullable=False, index=True)
     
     virtual_name = Column(String(255), nullable=False)
     # The actual, unique name of the database in PostgreSQL

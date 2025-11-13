@@ -3,13 +3,14 @@ from sqlalchemy.orm import Session
 from app.models.history_model import QueryHistory
 from app.models.saved_query_model import SavedQuery
 from app.models.user_model import User
+from app.models.virtual_database_model import VirtualDatabase
 from app.schemas.history_schema import SavedQueryCreate
 
 def get_query_history(db: Session, *, owner: User, limit: int = 50):
     """Gets the query history ONLY for the specified owner."""
     return db.query(QueryHistory).filter(QueryHistory.user_id == owner.user_id).order_by(QueryHistory.executed_at.desc()).limit(limit).all()
 
-def log_query_history(db: Session, *, owner: User, command: str, sql: str, status: str):
+def log_query_history(db: Session, *, owner: User, virtual_db: VirtualDatabase, command: str, sql: str, status: str):
     """Logs a query history entry for the specified owner."""
 
     existing_entry = db.query(QueryHistory).filter(
@@ -28,6 +29,7 @@ def log_query_history(db: Session, *, owner: User, command: str, sql: str, statu
     query_type = sql.strip().split()[0].upper()
     db_history = QueryHistory(
         user_id=owner.user_id, 
+        virtual_database_id=virtual_db.id,
         command_text=command,
         generated_sql=sql,
         status=status,
@@ -38,7 +40,7 @@ def log_query_history(db: Session, *, owner: User, command: str, sql: str, statu
     db.refresh(db_history)
     return db_history
 
-def find_in_history(db: Session, *, owner: User, command: str) -> QueryHistory | None:
+def find_in_history(db: Session, *, owner: User, command: str, virtual_db: VirtualDatabase) -> QueryHistory | None:
     """
     Looks for a recent, successful execution of an identical command text for a user.
     This acts as a cache to avoid unnecessary LLM calls.
@@ -46,6 +48,19 @@ def find_in_history(db: Session, *, owner: User, command: str) -> QueryHistory |
     return db.query(QueryHistory).filter(
         QueryHistory.user_id == owner.user_id,
         QueryHistory.command_text == command,
+        QueryHistory.virtual_database_id == virtual_db.id,
+        QueryHistory.status == 'success' 
+    ).order_by(QueryHistory.executed_at.desc()).first()
+
+def find_in_history_sql(db: Session, *, owner: User, sql_command: str, virtual_db: VirtualDatabase) -> QueryHistory | None:
+    """
+    Looks for a recent, successful execution of an identical generated_sql for a user.
+    This acts as a cache to avoid unnecessary LLM calls.
+    """
+    return db.query(QueryHistory).filter(
+        QueryHistory.user_id == owner.user_id,
+        QueryHistory.generated_sql == sql_command,
+        QueryHistory.virtual_database_id == virtual_db.id,
         QueryHistory.status == 'success' 
     ).order_by(QueryHistory.executed_at.desc()).first()
 

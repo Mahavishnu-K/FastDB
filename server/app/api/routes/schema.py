@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Header
 from fastapi.responses import PlainTextResponse
 from sqlalchemy import inspect, Table, MetaData, text
 from sqlalchemy.schema import CreateTable
+from typing import List
 
 # --- Important Imports for Multi-Tenancy ---
 from sqlalchemy.orm import Session
@@ -123,6 +124,25 @@ async def get_schema_as_mermaid(
         return mermaid_string
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate Mermaid diagram: {str(e)}")
+    
+@router.get("/tables", response_model=List[str], tags=["Schema"])
+async def get_table_names(
+    x_target_database: str = Header(..., alias="X-Target-Database"),
+    db_session: Session = Depends(get_db_session),
+    current_user: User = Depends(get_current_user)
+):
+    """Securely returns a list of table names for the user's target database."""
+    virtual_db = vdb_service.get_accessible_database(db_session, user=current_user, virtual_name=x_target_database)
+    if not virtual_db:
+        raise HTTPException(status_code=404, detail=f"Database '{x_target_database}' not found for your account.")
+    
+    try:
+        engine = get_engine_for_user_db(virtual_db.physical_name)
+        inspector = inspect(engine)
+        table_names = inspector.get_table_names(schema="public")
+        return table_names
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve table list: {str(e)}")
     
 @router.get("/{table_name}", response_model=TableSchema, tags=["Schema"])
 async def get_single_table_schema(
