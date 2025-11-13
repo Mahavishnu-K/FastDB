@@ -32,19 +32,19 @@ fastDB is more than just an API; it's a complete, end-to-end platform for modern
 
 ## 🚀 Key Features
 
-- ** Conversational Interface**: Use plain English to CREATE, INSERT, SELECT, and UPDATE your data. The system intelligently converts your commands into safe, efficient SQL.
+- **Conversational Interface**: Use plain English to CREATE, INSERT, SELECT, and UPDATE your data. The system intelligently converts your commands into safe, efficient SQL.
 
-- ** Secure Multi-Tenancy**: Each user's virtual database is a physically isolated PostgreSQL database, providing maximum security and data isolation.
+- **Secure Multi-Tenancy**: Each user's virtual database is a physically isolated PostgreSQL database, providing maximum security and data isolation.
 
-- ** Collaborative Workspaces**: Invite team members to collaborate on your databases with role-based access control (Owner, Editor, Viewer).
+- **Collaborative Workspaces**: Invite team members to collaborate on your databases with role-based access control (Owner, Editor, Viewer).
 
-- ** High-Performance Caching**: A dual-layer "Rapid Cache" (Static History & Normalized Template) bypasses the LLM for repeated queries, providing the speed of a traditional database.
+- **High-Performance Caching**: A dual-layer "Rapid Cache" (Static History & Normalized Template) bypasses the LLM for repeated queries, providing the speed of a traditional database.
 
-- ** Self-Hosted AI**: Powered by a self-hosted Llama 3.1 model running on Ollama, ensuring data privacy, low latency, and zero external API costs.
+- **Self-Hosted AI**: Powered by a self-hosted Llama 3.1 model running on Ollama, ensuring data privacy, low latency, and zero external API costs.
 
-- ** Developer-First SDKs**: Intuitive, idiomatic SDKs for Python and JavaScript/TypeScript with a powerful fluent query builder.
+- **Developer-First SDKs**: Intuitive, idiomatic SDKs for Python and JavaScript/TypeScript with a powerful fluent query builder.
 
-- ** Full-Featured Web Console**: A complete React-based UI for managing users, databases, collaboration, and running queries.
+- **Full-Featured Web Console**: A complete React-based UI for managing users, databases, collaboration, and running queries.
 
 ## 🏛️ System Architecture
 
