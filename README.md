@@ -18,9 +18,9 @@ FastDB is a full-stack, AI-powered database platform that revolutionizes how dev
 
 This repository contains the central backend API server. The complete fastDB ecosystem includes a web console, developer SDKs, and a CLI.
 
-## ✨ The fastDB Ecosystem
+## ✨ The FastDB Ecosystem
 
-fastDB is more than just an API; it's a complete, end-to-end platform for modern data management.
+FastDB is more than just an API; it's a complete, end-to-end platform for modern data management.
 
 | Component | Repository / Link | Description |
 |-----------|-------------------|-------------|
