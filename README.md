@@ -57,7 +57,7 @@ fastDB is built on a modern, scalable, and secure architecture. The backend API 
 |-------|------------|-----------|
 | **Frontend** | React, Vite, Tailwind CSS | For a modern, fast, and beautiful user interface. |
 | **Backend API** | Python, FastAPI, Uvicorn, Nginx | For high-performance, asynchronous API development and secure deployment. |
-| **AI Engine** | Ollama, Llama 3.1 | For private, low-latency, and state-of-the-art NLP-to-SQL translation. |
+| **AI Engine** | OpenAI 4.1 API/Ollama, Llama 3.1[self-hosted] | For inference, low-latency, and state-of-the-art NLP-to-SQL translation. |
 | **Database** | PostgreSQL, SQLAlchemy | For a robust, reliable, and production-grade relational data foundation. |
 | **SDKs** | PyPI (Python), npm (JS/TS) | To serve the two largest developer ecosystems. |
 | **Deployment** | Vercel (Frontend), Windows Server (Backend) | For global frontend performance and backend control. |
