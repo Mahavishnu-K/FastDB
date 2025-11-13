@@ -1,6 +1,10 @@
 # FastDB - The Conversational Cloud Database
 
 <p align="center">
+<img src="https://github.com/Mahavishnu-K/FastDB/blob/main/client/public/FastDB.png" alt="FastDB" width="150"/>
+</p>
+
+<p align="center">
 <strong>Interact with robust, production-grade databases using plain English.</strong>
 </p>
 
