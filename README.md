@@ -8,7 +8,7 @@
 <a href="https://github.com/Mahavishnu-K/FastDB/stargazers"><img src="https://img.shields.io/github/stars/Mahavishnu-K/FastDB?style=social" alt="GitHub stars"></a>
 <a href="https://github.com/Mahavishnu-K/FastDB/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
 <img src="https://img.shields.io/badge/Python-3.10+-blue?logo=python" alt="Python Version">
-<img src="https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript" alt="TypeScript Version">
+<img src="https://img.shields.io/badge/JavaScript-5.x-blue?logo=javascript" alt="JavaScript Version">
 <img src="https://img.shields.io/badge/React-18.x-blue?logo=react" alt="React Version">
 </p>
 
