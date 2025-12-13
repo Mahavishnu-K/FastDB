@@ -1,12 +1,16 @@
 # FastDB - The Conversational Cloud Database
 
 <p align="center">
+<img src="https://github.com/Mahavishnu-K/FastDB/blob/main/client/public/FastDB.png" alt="FastDB" height="300px" width="auto"/>
+</p>
+
+<p align="center">
 <strong>Interact with robust, production-grade databases using plain English.</strong>
 </p>
 
 <p align="center">
 <a href="https://github.com/Mahavishnu-K/FastDB/stargazers"><img src="https://img.shields.io/badge/stars-0-blue?style=social" alt="GitHub stars"></a>
-<a href="https://github.com/Mahavishnu-K/FastDB/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
+<a href="https://github.com/Mahavishnu-K/FastDB/blob/main/LICENSE"></a>
 <img src="https://img.shields.io/badge/Python-3.10+-blue?logo=python" alt="Python Version">
 <img src="https://img.shields.io/badge/JavaScript-5.x-blue?logo=javascript" alt="JavaScript Version">
 <img src="https://img.shields.io/badge/React-18.x-blue?logo=react" alt="React Version">
@@ -107,10 +111,6 @@ The API will be available at `http://localhost:8000`, with interactive documenta
 ## 🤝 Contributing
 
 Contributions are welcome! If you'd like to help improve fastDB, please feel free to fork the repository, make your changes, and submit a pull request. For major changes, please open an issue first to discuss what you would like to change.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 👨‍💻 Author
 
