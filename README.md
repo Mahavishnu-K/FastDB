@@ -28,7 +28,7 @@ FastDB is more than just an API; it's a complete, end-to-end platform for modern
 
 | Component | Repository / Link | Description |
 |-----------|-------------------|-------------|
-| 🌐 Landing Page | [fastdb-landing](https://github.com/Mahavishnu-K/FastDB-Landing) | A React-based web application for signing up and getting started with `fastdb`|
+| 🌐 Landing Page | [fastdb-landing](https://github.com/Mahavishnu-K/FastDB-Landing) | A React-based web application for signing up and getting started with `fastdb`.|
 | 🐍 Python SDK | [fastdb-python-sdk](https://github.com/Mahavishnu-K/FastDB-python-SDK) | The official Python SDK for integrating fastDB into your Python applications and scripts. |
 | ☕ JS/TS SDK | [fastdb-js-sdk](https://github.com/Mahavishnu-K/FastDB-js-SDK) | The official JavaScript/TypeScript SDK for both Node.js backends and frontend applications. |
 | 💻 FastDB CLI | [fastdb-cli](https://github.com/Mahavishnu-K/FastDB-CLI) | A command-line interface for managing your fastDB account and databases directly from your terminal. |
