@@ -58,6 +58,8 @@ FastDB is more than just an API; it's a complete, end-to-end platform for modern
 
 FastDB is built on a modern, scalable, and secure architecture. The backend API acts as the central orchestrator, managing authentication, multi-tenancy, and communication with the self-hosted LLM and the PostgreSQL database cluster.
 
+<img src="https://github.com/Mahavishnu-K/FastDB/blob/main/client/public/FastDB_flow.png" alt="FastDB Architecture Diagram" height="600px" width="auto"/>
+
 
 ## 🛠️ Technology Stack
 
